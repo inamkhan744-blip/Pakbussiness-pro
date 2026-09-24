@@ -79,6 +79,9 @@ fun SettingsTab(
     var editOwner by remember(activeBusiness) { mutableStateOf(activeBusiness?.ownerName ?: "") }
     var editPhone by remember(activeBusiness) { mutableStateOf(activeBusiness?.phone ?: "") }
     var editAddress by remember(activeBusiness) { mutableStateOf(activeBusiness?.address ?: "") }
+    var editCurrency by remember(activeBusiness) { mutableStateOf(activeBusiness?.currency ?: "PKR") }
+
+    val supportedCurrencies = listOf("PKR", "USD", "EUR", "GBP", "AED", "SAR", "INR", "CAD")
 
     LazyColumn(
         modifier = modifier
@@ -142,7 +145,7 @@ fun SettingsTab(
                             color = PakEmeraldContainer
                         ) {
                             Text(
-                                text = "₨ PKR",
+                                text = activeBusiness?.currency ?: "PKR",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp,
                                 color = PakEmeraldPrimary,
@@ -424,6 +427,59 @@ fun SettingsTab(
                         label = { Text("Address") },
                         singleLine = true
                     )
+
+                    Text(
+                        text = "Accounting Currency",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        supportedCurrencies.take(4).forEach { cur ->
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (editCurrency == cur) PakEmeraldPrimary else MaterialTheme.colorScheme.surfaceVariant,
+                                modifier = Modifier
+                                    .clickable { editCurrency = cur }
+                                    .padding(vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = cur,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (editCurrency == cur) Color.White else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        supportedCurrencies.drop(4).forEach { cur ->
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (editCurrency == cur) PakEmeraldPrimary else MaterialTheme.colorScheme.surfaceVariant,
+                                modifier = Modifier
+                                    .clickable { editCurrency = cur }
+                                    .padding(vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = cur,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (editCurrency == cur) Color.White else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {
@@ -436,7 +492,8 @@ fun SettingsTab(
                                     type = editType.trim(),
                                     ownerName = editOwner.trim(),
                                     phone = editPhone.trim(),
-                                    address = editAddress.trim()
+                                    address = editAddress.trim(),
+                                    currency = editCurrency
                                 )
                             )
                             showEditProfileDialog = false

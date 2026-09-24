@@ -1,5 +1,6 @@
 package com.example.ui.screens.gym
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -51,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -248,6 +251,7 @@ fun GymMemberCard(
     onToggleCheckIn: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     Card(
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -375,26 +379,57 @@ fun GymMemberCard(
                     )
                 }
 
-                Button(
-                    onClick = onToggleCheckIn,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (member.isCheckedIn) Color(0xFFC62828) else PakEmeraldPrimary
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    modifier = Modifier.testTag("quick_checkin_btn_${member.id}")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(
-                        imageVector = if (member.isCheckedIn) Icons.Default.Logout else Icons.Default.Login,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = if (member.isCheckedIn) "Check Out" else "Check In",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (member.isExpired || member.isExpiringSoon) {
+                        IconButton(
+                            onClick = {
+                                val statusNote = if (member.isExpired) "expired on ${GymDateUtils.formatDate(member.expiryDate)}" else "is expiring soon on ${GymDateUtils.formatDate(member.expiryDate)}"
+                                val msg = """
+                                    Assalam-o-Alaikum ${member.name},
+                                    
+                                    Your gym membership (${member.plan}) at our fitness center $statusNote.
+                                    
+                                    Please renew your membership fee (${GymDateUtils.formatCurrency(member.amountPkr)}) to continue your workouts without interruption.
+                                    
+                                    Thank you!
+                                """.trimIndent()
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, msg)
+                                    type = "text/plain"
+                                }
+                                context.startActivity(Intent.createChooser(sendIntent, "Send Renewal Alert via WhatsApp"))
+                            },
+                            modifier = Modifier.size(34.dp)
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = "Renewal Alert", tint = Color(0xFF25D366), modifier = Modifier.size(18.dp))
+                        }
+                    }
+
+                    Button(
+                        onClick = onToggleCheckIn,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (member.isCheckedIn) Color(0xFFC62828) else PakEmeraldPrimary
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.testTag("quick_checkin_btn_${member.id}")
+                    ) {
+                        Icon(
+                            imageVector = if (member.isCheckedIn) Icons.Default.Logout else Icons.Default.Login,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (member.isCheckedIn) "Check Out" else "Check In",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }

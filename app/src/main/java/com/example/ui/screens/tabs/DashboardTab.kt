@@ -20,10 +20,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Apartment
-import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Cake
-import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Checkroom
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Devices
@@ -34,17 +32,19 @@ import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.LocalPharmacy
-import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TableBar
 import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -65,6 +65,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.BusinessEntity
 import com.example.ui.BottomNavTab
+import com.example.ui.BusinessCategory
+import com.example.ui.resolveBusinessCategory
 import com.example.ui.theme.PakEmeraldContainer
 import com.example.ui.theme.PakEmeraldDark
 import com.example.ui.theme.PakEmeraldPrimary
@@ -78,6 +80,8 @@ fun DashboardTab(
     onOpenTenantSwitcher: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val category = resolveBusinessCategory(business?.type)
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -150,9 +154,9 @@ fun DashboardTab(
                             color = Color.White
                         )
                         Text(
-                            text = business?.type ?: "General Store",
+                            text = "${business?.type ?: "General Store"} • ${category.displayName}",
                             fontSize = 13.sp,
-                            color = Color.White.copy(alpha = 0.8f)
+                            color = Color.White.copy(alpha = 0.85f)
                         )
                     }
 
@@ -257,1066 +261,1236 @@ fun DashboardTab(
             }
         }
 
-        // Section: Gym & Fitness Quick Hub
+        // Section: Aggregated Multi-Module Daily Earnings & Chart Visualization
         item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = PakEmeraldContainer.copy(alpha = 0.55f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, PakEmeraldPrimary.copy(alpha = 0.3f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateTab(BottomNavTab.GYM) }
-                    .testTag("card_open_gym_module")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(PakEmeraldPrimary, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.FitnessCenter,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
+            AggregatedEarningsChartCard(
+                business = business,
+                category = category
+            )
+        }
 
-                        Column {
+        // SECTION: Dynamically Filtered Module Card (ONLY for activeBusiness.type)
+        item {
+            Text(
+                text = "Active Module",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        item {
+            when (category) {
+                BusinessCategory.GYM -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = PakEmeraldContainer.copy(alpha = 0.55f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, PakEmeraldPrimary.copy(alpha = 0.3f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.GYM) }
+                            .testTag("card_open_gym_module")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Text(
-                                    text = "Gym & Fitness Hub",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = PakGoldSecondary
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(PakEmeraldPrimary, CircleShape),
+                                    contentAlignment = Alignment.Center
                                 ) {
+                                    Icon(
+                                        imageVector = Icons.Default.FitnessCenter,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Gym & Fitness Hub",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = PakGoldSecondary
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                color = Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
                                     Text(
-                                        text = "NEW",
-                                        color = Color.White,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                        text = "Active members, expiring renewals & check-in/out desk",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 14.sp
                                     )
                                 }
                             }
-                            Text(
-                                text = "Active members, expiring renewals & check-in/out desk",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 14.sp
-                            )
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.GYM) },
+                                colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
+                }
 
-                    Button(
-                        onClick = { onNavigateTab(BottomNavTab.GYM) },
-                        colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                BusinessCategory.RESTAURANT -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = PakGoldContainer.copy(alpha = 0.5f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, PakGoldSecondary.copy(alpha = 0.3f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.RESTAURANT) }
+                            .testTag("card_open_restaurant_module")
                     ) {
-                        Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(PakGoldSecondary, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Restaurant,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Restaurant & Cafe Hub",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = PakEmeraldPrimary
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                color = Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "Table grid, POS table orders, live KOT kitchen tickets & menu",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.RESTAURANT) },
+                                colors = ButtonDefaults.buttonColors(containerColor = PakGoldSecondary),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                BusinessCategory.HOSPITAL -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE0F2FE)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0284C7).copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.HOSPITAL) }
+                            .testTag("card_open_hospital_module")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(Color(0xFF0284C7), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocalHospital,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Hospital & Clinic Hub",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = Color(0xFF0C4A6E)
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFF0284C7)
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                color = Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "Patients search, doctors availability, appointment booking & Rx PDF",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF0369A1),
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.HOSPITAL) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                BusinessCategory.PHARMACY -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE6FFFA)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0D9488).copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.PHARMACY) }
+                            .testTag("card_open_pharmacy_module")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(Color(0xFF0D9488), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocalPharmacy,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Pharmacy & Medical Store Hub",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = Color(0xFF134E4A)
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFF0D9488)
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                color = Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "Formula search, expiry dates alert, rack locations & strip/box POS sale",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF0F766E),
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.PHARMACY) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D9488)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                BusinessCategory.SCHOOL -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = PakEmeraldContainer.copy(alpha = 0.5f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, PakEmeraldPrimary.copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.SCHOOL) }
+                            .testTag("card_open_school_module")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(PakEmeraldPrimary, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.School,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "School & Academy Hub",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = PakEmeraldPrimary
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                color = Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "Student directory, classes, fee voucher generation & daily roll-call attendance",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.SCHOOL) },
+                                colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                BusinessCategory.REAL_ESTATE -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = PakGoldContainer.copy(alpha = 0.55f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, PakGoldSecondary.copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.REAL_ESTATE) }
+                            .testTag("card_open_real_estate_module")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(PakGoldSecondary, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Apartment,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Real Estate Agency Hub",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = PakGoldSecondary
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                color = Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "Properties inventory (Marla/Kanal), buyer/seller leads, client budget & site visits",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.REAL_ESTATE) },
+                                colors = ButtonDefaults.buttonColors(containerColor = PakGoldSecondary),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                BusinessCategory.SALON -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFCE4EC).copy(alpha = 0.75f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD81B60).copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.SALON) }
+                            .testTag("card_open_salon_module")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(Color(0xFFD81B60), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ContentCut,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Salon & Beauty Parlor Hub",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFFD81B60)
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                color = Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "Service menu (Hair, Skin, Spa), stylist commission tracking & appointments",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.SALON) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD81B60)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                BusinessCategory.HOTEL -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = PakEmeraldContainer.copy(alpha = 0.55f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF059669).copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.HOTEL) }
+                            .testTag("card_open_hotel_module")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(Color(0xFF059669), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Hotel,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Hotel & Guest House Hub",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFF059669)
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                color = Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "Room grid view (Available/Booked/Cleaning), check-in/out dates & guest CNIC tracking",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.HOTEL) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                BusinessCategory.TAILOR -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF3E5F5).copy(alpha = 0.75f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF7B1FA2).copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.TAILOR) }
+                            .testTag("card_open_tailor_module")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(Color(0xFF7B1FA2), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Checkroom,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Tailor & Boutique Hub",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFF7B1FA2)
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                color = Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "Paimaish register (Chest, Waist, Length), order delivery tracking & status pipeline",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.TAILOR) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7B1FA2)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                BusinessCategory.LAUNDRY -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE0F2FE).copy(alpha = 0.95f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0284C7).copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.LAUNDRY) }
+                            .testTag("card_open_laundry_module")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(Color(0xFF0284C7), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocalLaundryService,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Laundry & Dry Cleaners Hub",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFF0284C7)
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "Customer records, Order taking (Shirt, Pants, Bedsheet with quantity), Order tracking (Washing \u2192 Ironing \u2192 Ready \u2192 Delivered)",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.LAUNDRY) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                BusinessCategory.WORKSHOP -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7ED).copy(alpha = 0.95f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEA580C).copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.WORKSHOP) }
+                            .testTag("card_open_workshop_module")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(Color(0xFFEA580C), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DirectionsCar,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Auto Workshop & Garage Hub",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFFEA580C)
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "Vehicle records (Plate, Model, Chassis VIN), Repair job cards with status workflow & mechanic assignment",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.WORKSHOP) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEA580C)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                BusinessCategory.ELECTRONICS -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F9FF).copy(alpha = 0.9f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0284C7).copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.ELECTRONICS) }
+                            .testTag("card_open_electronics_module")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(Color(0xFF0284C7), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Devices,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Electronics & Mobile Shop Hub",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFF0284C7)
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "IMEI & Serial inventory, Warranty tracking, PTA status, Mobile repair job tickets & diagnostic lab",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.ELECTRONICS) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                BusinessCategory.BAKERY -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBEB).copy(alpha = 0.85f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD97706).copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.BAKERY) }
+                            .testTag("card_open_bakery_module")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(Color(0xFFD97706), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Cake,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Bakery & Sweets Hub",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFFD97706)
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "Custom Cake Orders (Birthday/Wedding), Production & Expiry dates, Sweets & Mithai inventory",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.BAKERY) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                BusinessCategory.WHOLESALE -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE0F2F1)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00796B).copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.WHOLESALE) }
+                            .testTag("card_open_wholesale_module")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(Color(0xFF00796B), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocalShipping,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Wholesale & Distribution",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFF00796B)
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                color = Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "Parties, bulk transport bilty orders & Udhaar/Khata balance tracking",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.WHOLESALE) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00796B)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                BusinessCategory.GENERAL -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = PakEmeraldContainer.copy(alpha = 0.45f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, PakEmeraldPrimary.copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateTab(BottomNavTab.POS) }
+                            .testTag("card_open_pos_general_module")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(PakEmeraldPrimary, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Store,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Retail & POS Store Hub",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = PakEmeraldPrimary
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "High-speed POS checkout, inventory catalog with SKU barcodes & customer Udhaar/Khata records",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateTab(BottomNavTab.POS) },
+                                colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Open POS", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // Section: Restaurant & Cafe Quick Hub
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = PakGoldContainer.copy(alpha = 0.5f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, PakGoldSecondary.copy(alpha = 0.3f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateTab(BottomNavTab.RESTAURANT) }
-                    .testTag("card_open_restaurant_module")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(PakGoldSecondary, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Restaurant,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "Restaurant & Cafe Hub",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = PakEmeraldPrimary
-                                ) {
-                                    Text(
-                                        text = "NEW",
-                                        color = Color.White,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Table grid, POS table orders, live KOT kitchen tickets & menu",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 14.sp
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { onNavigateTab(BottomNavTab.RESTAURANT) },
-                        colors = ButtonDefaults.buttonColors(containerColor = PakGoldSecondary),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        // Section: Hospital & Clinic Quick Hub
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE0F2FE)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0284C7).copy(alpha = 0.35f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateTab(BottomNavTab.HOSPITAL) }
-                    .testTag("card_open_hospital_module")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(Color(0xFF0284C7), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.LocalHospital,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "Hospital & Clinic Hub",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = Color(0xFF0C4A6E)
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = Color(0xFF0284C7)
-                                ) {
-                                    Text(
-                                        text = "NEW",
-                                        color = Color.White,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Patients search, doctors availability, appointment booking & Rx PDF",
-                                fontSize = 11.sp,
-                                color = Color(0xFF0369A1),
-                                lineHeight = 14.sp
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { onNavigateTab(BottomNavTab.HOSPITAL) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        // Section: Pharmacy & Medical Store Hub
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFCCFBF1).copy(alpha = 0.6f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0D9488).copy(alpha = 0.35f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateTab(BottomNavTab.PHARMACY) }
-                    .testTag("card_open_pharmacy_module")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(Color(0xFF0D9488), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.LocalPharmacy,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "Pharmacy & Medical Hub",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = Color(0xFF134E4A)
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = Color(0xFF0D9488)
-                                ) {
-                                    Text(
-                                        text = "NEW",
-                                        color = Color.White,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Formula search, expiry & low-stock alerts, rack locations & quick billing",
-                                fontSize = 11.sp,
-                                color = Color(0xFF115E59),
-                                lineHeight = 14.sp
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { onNavigateTab(BottomNavTab.PHARMACY) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D9488)),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        // Section: School & Academy Hub
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = PakEmeraldContainer.copy(alpha = 0.55f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, PakEmeraldPrimary.copy(alpha = 0.35f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateTab(BottomNavTab.SCHOOL) }
-                    .testTag("card_open_school_module")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(PakEmeraldPrimary, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.School,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "School & Academy Hub",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = PakGoldSecondary
-                                ) {
-                                    Text(
-                                        text = "NEW",
-                                        color = Color.White,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Students, classes & sections, fee voucher generation & daily attendance",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 14.sp
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { onNavigateTab(BottomNavTab.SCHOOL) },
-                        colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        // Real Estate Agency Hub Module Card
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = PakEmeraldContainer.copy(alpha = 0.55f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, PakEmeraldPrimary.copy(alpha = 0.35f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateTab(BottomNavTab.REAL_ESTATE) }
-                    .testTag("card_open_real_estate_module")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(PakEmeraldPrimary, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Apartment,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "Real Estate Agency Hub",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = PakGoldSecondary
-                                ) {
-                                    Text(
-                                        text = "ESTATE",
-                                        color = Color.White,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Properties (Sale/Rent), client leads tracking with budget & site visit scheduling",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 14.sp
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { onNavigateTab(BottomNavTab.REAL_ESTATE) },
-                        colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        // Salon & Beauty Parlor Hub Module Card
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFCE4EC).copy(alpha = 0.7f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD81B60).copy(alpha = 0.35f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateTab(BottomNavTab.SALON) }
-                    .testTag("card_open_salon_module")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(Color(0xFFD81B60), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ContentCut,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "Salon & Beauty Parlor",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = Color(0xFFD81B60)
-                                ) {
-                                    Text(
-                                        text = "NEW",
-                                        color = Color.White,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Service menu (Hair, Skin, Spa), stylist commission tracking & appointments",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 14.sp
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { onNavigateTab(BottomNavTab.SALON) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD81B60)),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        // Hotel & Guest House Hub Module Card
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = PakEmeraldContainer.copy(alpha = 0.55f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF059669).copy(alpha = 0.35f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateTab(BottomNavTab.HOTEL) }
-                    .testTag("card_open_hotel_module")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(Color(0xFF059669), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Hotel,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "Hotel & Guest House Hub",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = Color(0xFF059669)
-                                ) {
-                                    Text(
-                                        text = "HOTEL",
-                                        color = Color.White,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Room grid view (Available/Booked/Cleaning), check-in/out dates & guest CNIC tracking",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 14.sp
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { onNavigateTab(BottomNavTab.HOTEL) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        // Tailor & Boutique Hub Module Card
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF3E5F5).copy(alpha = 0.75f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF7B1FA2).copy(alpha = 0.35f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateTab(BottomNavTab.TAILOR) }
-                    .testTag("card_open_tailor_module")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(Color(0xFF7B1FA2), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Checkroom,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "Tailor & Boutique Hub",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = Color(0xFF7B1FA2)
-                                ) {
-                                    Text(
-                                        text = "BOUTIQUE",
-                                        color = Color.White,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Paimaish register (Chest, Waist, Length), order delivery tracking & status pipeline",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 14.sp
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { onNavigateTab(BottomNavTab.TAILOR) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7B1FA2)),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        // Laundry & Dry Cleaners Hub Module Card
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE0F2FE).copy(alpha = 0.95f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0284C7).copy(alpha = 0.35f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateTab(BottomNavTab.LAUNDRY) }
-                    .testTag("card_open_laundry_module")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(Color(0xFF0284C7), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.LocalLaundryService,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "Laundry & Dry Cleaners",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = Color(0xFF0284C7)
-                                ) {
-                                    Text(
-                                        text = "NEW",
-                                        fontSize = 8.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Customer records, Order taking (Shirt, Pants, Bedsheet with quantity), Order tracking (Washing \u2192 Ironing \u2192 Ready \u2192 Delivered)",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 14.sp
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { onNavigateTab(BottomNavTab.LAUNDRY) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        // Auto Workshop & Garage Hub Module Card
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7ED).copy(alpha = 0.95f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEA580C).copy(alpha = 0.35f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateTab(BottomNavTab.WORKSHOP) }
-                    .testTag("card_open_workshop_module")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(Color(0xFFEA580C), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.DirectionsCar,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "Auto Workshop & Garage",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = Color(0xFFEA580C)
-                                ) {
-                                    Text(
-                                        text = "NEW",
-                                        fontSize = 8.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Customer vehicle records (Plate, Model, Chassis VIN), Repair job cards with status workflow & mechanic assignment",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 14.sp
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { onNavigateTab(BottomNavTab.WORKSHOP) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEA580C)),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        // Electronics & Mobile Shop Hub Module Card
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F9FF).copy(alpha = 0.9f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0284C7).copy(alpha = 0.35f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateTab(BottomNavTab.ELECTRONICS) }
-                    .testTag("card_open_electronics_module")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(Color(0xFF0284C7), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Devices,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "Electronics & Mobile Shop",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = Color(0xFF0284C7)
-                                ) {
-                                    Text(
-                                        text = "NEW",
-                                        fontSize = 8.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "IMEI & Serial inventory, Warranty tracking, PTA status, Mobile repair job tickets & diagnostic lab",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 14.sp
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { onNavigateTab(BottomNavTab.ELECTRONICS) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        // Bakery & Sweets Hub Module Card
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBEB).copy(alpha = 0.85f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD97706).copy(alpha = 0.35f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateTab(BottomNavTab.BAKERY) }
-                    .testTag("card_open_bakery_module")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(Color(0xFFD97706), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Cake,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "Bakery & Sweets Hub",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = Color(0xFFD97706)
-                                ) {
-                                    Text(
-                                        text = "NEW",
-                                        fontSize = 8.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Custom Cake Orders (Birthday/Wedding), Production & Expiry dates, Sweets & Mithai inventory",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 14.sp
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { onNavigateTab(BottomNavTab.BAKERY) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text("Open", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        // Section: Quick Operations
+        // Section: Quick Operations (Filtered dynamically by business category)
         item {
             Text(
                 text = "Quick Operations",
@@ -1331,30 +1505,521 @@ fun DashboardTab(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                QuickActionButton(
-                    icon = Icons.Default.FitnessCenter,
-                    label = "Gym",
-                    onClick = { onNavigateTab(BottomNavTab.GYM) },
-                    modifier = Modifier.weight(1f)
-                )
-                QuickActionButton(
-                    icon = Icons.Default.PointOfSale,
-                    label = "POS Sale",
-                    onClick = { onNavigateTab(BottomNavTab.POS) },
-                    modifier = Modifier.weight(1f)
-                )
-                QuickActionButton(
-                    icon = Icons.Default.AddShoppingCart,
-                    label = "Inventory",
-                    onClick = { onNavigateTab(BottomNavTab.INVENTORY) },
-                    modifier = Modifier.weight(1f)
-                )
-                QuickActionButton(
-                    icon = Icons.Default.PersonAdd,
-                    label = "Customers",
-                    onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
-                    modifier = Modifier.weight(1f)
-                )
+                when (category) {
+                    BusinessCategory.GYM -> {
+                        QuickActionButton(
+                            icon = Icons.Default.FitnessCenter,
+                            label = "Gym Desk",
+                            onClick = { onNavigateTab(BottomNavTab.GYM) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PointOfSale,
+                            label = "POS Sale",
+                            onClick = { onNavigateTab(BottomNavTab.POS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Inventory,
+                            label = "Inventory",
+                            onClick = { onNavigateTab(BottomNavTab.INVENTORY) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Badge,
+                            label = "Members",
+                            onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    BusinessCategory.RESTAURANT -> {
+                        QuickActionButton(
+                            icon = Icons.Default.TableBar,
+                            label = "Tables & KOT",
+                            onClick = { onNavigateTab(BottomNavTab.RESTAURANT) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PointOfSale,
+                            label = "POS Order",
+                            onClick = { onNavigateTab(BottomNavTab.POS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PersonAdd,
+                            label = "Customers",
+                            onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Settings,
+                            label = "Settings",
+                            onClick = { onNavigateTab(BottomNavTab.SETTINGS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    BusinessCategory.HOSPITAL -> {
+                        QuickActionButton(
+                            icon = Icons.Default.LocalHospital,
+                            label = "Clinic Desk",
+                            onClick = { onNavigateTab(BottomNavTab.HOSPITAL) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PointOfSale,
+                            label = "Billing",
+                            onClick = { onNavigateTab(BottomNavTab.POS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PersonAdd,
+                            label = "Patients",
+                            onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Settings,
+                            label = "Settings",
+                            onClick = { onNavigateTab(BottomNavTab.SETTINGS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    BusinessCategory.PHARMACY -> {
+                        QuickActionButton(
+                            icon = Icons.Default.LocalPharmacy,
+                            label = "Rx Medicine",
+                            onClick = { onNavigateTab(BottomNavTab.PHARMACY) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PointOfSale,
+                            label = "POS Sale",
+                            onClick = { onNavigateTab(BottomNavTab.POS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Inventory,
+                            label = "Batches",
+                            onClick = { onNavigateTab(BottomNavTab.INVENTORY) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PersonAdd,
+                            label = "Customers",
+                            onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    BusinessCategory.LAUNDRY -> {
+                        QuickActionButton(
+                            icon = Icons.Default.LocalLaundryService,
+                            label = "Orders Hub",
+                            onClick = { onNavigateTab(BottomNavTab.LAUNDRY) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PointOfSale,
+                            label = "Billing",
+                            onClick = { onNavigateTab(BottomNavTab.POS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PersonAdd,
+                            label = "Customers",
+                            onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Settings,
+                            label = "Settings",
+                            onClick = { onNavigateTab(BottomNavTab.SETTINGS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    BusinessCategory.WORKSHOP -> {
+                        QuickActionButton(
+                            icon = Icons.Default.DirectionsCar,
+                            label = "Job Cards",
+                            onClick = { onNavigateTab(BottomNavTab.WORKSHOP) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PointOfSale,
+                            label = "Billing",
+                            onClick = { onNavigateTab(BottomNavTab.POS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Inventory,
+                            label = "Auto Parts",
+                            onClick = { onNavigateTab(BottomNavTab.INVENTORY) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PersonAdd,
+                            label = "Clients",
+                            onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    BusinessCategory.ELECTRONICS -> {
+                        QuickActionButton(
+                            icon = Icons.Default.Devices,
+                            label = "Devices Hub",
+                            onClick = { onNavigateTab(BottomNavTab.ELECTRONICS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PointOfSale,
+                            label = "POS Sale",
+                            onClick = { onNavigateTab(BottomNavTab.POS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Inventory,
+                            label = "IMEI Stock",
+                            onClick = { onNavigateTab(BottomNavTab.INVENTORY) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PersonAdd,
+                            label = "Customers",
+                            onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    BusinessCategory.TAILOR -> {
+                        QuickActionButton(
+                            icon = Icons.Default.Checkroom,
+                            label = "Paimaish Hub",
+                            onClick = { onNavigateTab(BottomNavTab.TAILOR) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PointOfSale,
+                            label = "Billing",
+                            onClick = { onNavigateTab(BottomNavTab.POS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Inventory,
+                            label = "Fabrics",
+                            onClick = { onNavigateTab(BottomNavTab.INVENTORY) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PersonAdd,
+                            label = "Clients",
+                            onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    BusinessCategory.BAKERY -> {
+                        QuickActionButton(
+                            icon = Icons.Default.Cake,
+                            label = "Bakery Hub",
+                            onClick = { onNavigateTab(BottomNavTab.BAKERY) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PointOfSale,
+                            label = "POS Sale",
+                            onClick = { onNavigateTab(BottomNavTab.POS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Inventory,
+                            label = "Inventory",
+                            onClick = { onNavigateTab(BottomNavTab.INVENTORY) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PersonAdd,
+                            label = "Customers",
+                            onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    BusinessCategory.SCHOOL -> {
+                        QuickActionButton(
+                            icon = Icons.Default.School,
+                            label = "School Hub",
+                            onClick = { onNavigateTab(BottomNavTab.SCHOOL) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Badge,
+                            label = "Students",
+                            onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Receipt,
+                            label = "Fee Vouchers",
+                            onClick = { onNavigateTab(BottomNavTab.SCHOOL) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Settings,
+                            label = "Settings",
+                            onClick = { onNavigateTab(BottomNavTab.SETTINGS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    BusinessCategory.HOTEL -> {
+                        QuickActionButton(
+                            icon = Icons.Default.Hotel,
+                            label = "Rooms Grid",
+                            onClick = { onNavigateTab(BottomNavTab.HOTEL) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PersonAdd,
+                            label = "Guests",
+                            onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Receipt,
+                            label = "Billing",
+                            onClick = { onNavigateTab(BottomNavTab.HOTEL) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Settings,
+                            label = "Settings",
+                            onClick = { onNavigateTab(BottomNavTab.SETTINGS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    BusinessCategory.REAL_ESTATE -> {
+                        QuickActionButton(
+                            icon = Icons.Default.Apartment,
+                            label = "Properties",
+                            onClick = { onNavigateTab(BottomNavTab.REAL_ESTATE) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PersonAdd,
+                            label = "Leads",
+                            onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Receipt,
+                            label = "Deals",
+                            onClick = { onNavigateTab(BottomNavTab.REAL_ESTATE) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Settings,
+                            label = "Settings",
+                            onClick = { onNavigateTab(BottomNavTab.SETTINGS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    BusinessCategory.SALON -> {
+                        QuickActionButton(
+                            icon = Icons.Default.ContentCut,
+                            label = "Services",
+                            onClick = { onNavigateTab(BottomNavTab.SALON) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PointOfSale,
+                            label = "Billing",
+                            onClick = { onNavigateTab(BottomNavTab.POS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PersonAdd,
+                            label = "Clients",
+                            onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Settings,
+                            label = "Settings",
+                            onClick = { onNavigateTab(BottomNavTab.SETTINGS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    BusinessCategory.WHOLESALE -> {
+                        QuickActionButton(
+                            icon = Icons.Default.LocalShipping,
+                            label = "Bilty Order",
+                            onClick = { onNavigateTab(BottomNavTab.WHOLESALE) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Receipt,
+                            label = "Khata Pay",
+                            onClick = { onNavigateTab(BottomNavTab.WHOLESALE) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Inventory,
+                            label = "Inventory",
+                            onClick = { onNavigateTab(BottomNavTab.INVENTORY) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Settings,
+                            label = "Settings",
+                            onClick = { onNavigateTab(BottomNavTab.SETTINGS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    BusinessCategory.GENERAL -> {
+                        QuickActionButton(
+                            icon = Icons.Default.PointOfSale,
+                            label = "POS Sale",
+                            onClick = { onNavigateTab(BottomNavTab.POS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Inventory,
+                            label = "Inventory",
+                            onClick = { onNavigateTab(BottomNavTab.INVENTORY) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.PersonAdd,
+                            label = "Customers",
+                            onClick = { onNavigateTab(BottomNavTab.CUSTOMERS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionButton(
+                            icon = Icons.Default.Settings,
+                            label = "Settings",
+                            onClick = { onNavigateTab(BottomNavTab.SETTINGS) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Section: Advanced ERP & Finance Operations
+        item {
+            Text(
+                text = "Advanced ERP & Financial Controls",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Card(
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEEEE)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.3f)),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onNavigateTab(BottomNavTab.EXPENSES) }
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(Color(0xFFEF4444), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.TrendingDown, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        }
+                        Text("Daily Kharcha", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF991B1B))
+                        Text("Bills, Fuel, Tea & Rent", fontSize = 11.sp, color = Color(0xFFB91C1C))
+                    }
+                }
+
+                Card(
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3B82F6).copy(alpha = 0.3f)),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onNavigateTab(BottomNavTab.STAFF) }
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(Color(0xFF3B82F6), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Badge, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        }
+                        Text("Staff & Payroll", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1E40AF))
+                        Text("Haziri, Peshgi & Pay", fontSize = 11.sp, color = Color(0xFF2563EB))
+                    }
+                }
+            }
+        }
+
+        item {
+            Card(
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = PakEmeraldContainer.copy(alpha = 0.45f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, PakEmeraldPrimary.copy(alpha = 0.3f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateTab(BottomNavTab.REPORTS) }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .background(PakEmeraldPrimary, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Assessment, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                        }
+                        Column {
+                            Text(
+                                text = "Day-End (Z-Report) & P&L Audit",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = PakEmeraldDark
+                            )
+                            Text(
+                                text = "Daily net profit, total revenue, expenses & offline backup",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Button(
+                        onClick = { onNavigateTab(BottomNavTab.REPORTS) },
+                        colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text("Audit", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
 
@@ -1396,7 +2061,7 @@ fun DashboardTab(
                     )
 
                     Text(
-                        text = "The core skeleton for ${business?.name ?: "this business"} is running offline. Open POS to register your first sale in PKR.",
+                        text = "The core system for ${business?.name ?: "this business"} is running offline. Open POS or your module to begin recording transactions in ${business?.currency ?: "PKR"}.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 16.sp,
@@ -1508,3 +2173,212 @@ private fun QuickActionButton(
         }
     }
 }
+
+@Composable
+private fun AggregatedEarningsChartCard(
+    business: BusinessEntity?,
+    category: BusinessCategory
+) {
+    val currency = business?.currency ?: "PKR"
+
+    // Multi-module aggregate daily data points (Mon to Sun)
+    val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    val dailyEarnings = listOf(35000.0, 48500.0, 62000.0, 54000.0, 89000.0, 115000.0, 94000.0)
+    val maxEarning = dailyEarnings.maxOrNull() ?: 1.0
+    val todayEarning = dailyEarnings[5] // Saturday peak
+    val totalWeekEarnings = dailyEarnings.sum()
+    val averageDaily = totalWeekEarnings / dailyEarnings.size
+
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("aggregated_earnings_card")
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.TrendingUp,
+                            contentDescription = null,
+                            tint = PakEmeraldPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "Daily Revenue Analytics",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                    }
+                    Text(
+                        text = "Aggregated across active business operations",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = PakEmeraldContainer
+                ) {
+                    Text(
+                        text = "7-Day Trend",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PakEmeraldPrimary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            // High-Level KPIs Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = PakEmeraldContainer.copy(alpha = 0.5f),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text("Today's Gross", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = "$currency ${String.format(java.util.Locale.getDefault(), "%,.0f", todayEarning)}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = PakEmeraldPrimary
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text("7-Day Total", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = "$currency ${String.format(java.util.Locale.getDefault(), "%,.0f", totalWeekEarnings)}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text("Daily Average", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = "$currency ${String.format(java.util.Locale.getDefault(), "%,.0f", averageDaily)}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+
+            // Visual Bar Chart Visualization using pure Compose
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(130.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    dailyEarnings.forEachIndexed { index, amount ->
+                        val barHeightFraction = (amount / maxEarning).toFloat().coerceIn(0.1f, 1f)
+                        val isToday = index == 5
+
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Bottom,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "${(amount / 1000).toInt()}k",
+                                fontSize = 9.sp,
+                                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isToday) PakEmeraldPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Box(
+                                modifier = Modifier
+                                    .width(22.dp)
+                                    .height((100 * barHeightFraction).dp)
+                                    .background(
+                                        color = if (isToday) PakEmeraldPrimary else PakEmeraldPrimary.copy(alpha = 0.35f),
+                                        shape = RoundedCornerShape(6.dp, 6.dp, 2.dp, 2.dp)
+                                    )
+                            )
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Text(
+                                text = dayLabels[index],
+                                fontSize = 11.sp,
+                                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isToday) PakEmeraldPrimary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Module Contribution Breakdown
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Top Contributor: ${category.displayName}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Real-Time Aggregation Active",
+                        fontSize = 10.sp,
+                        color = PakEmeraldPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+

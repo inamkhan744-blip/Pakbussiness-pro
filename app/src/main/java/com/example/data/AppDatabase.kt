@@ -44,9 +44,15 @@ import androidx.room.RoomDatabase
         WorkshopMechanicEntity::class,
         WorkshopJobCardEntity::class,
         LaundryCustomerEntity::class,
-        LaundryOrderEntity::class
+        LaundryOrderEntity::class,
+        WholesalePartyEntity::class,
+        WholesaleBulkOrderEntity::class,
+        WholesalePaymentEntity::class,
+        ExpenseEntity::class,
+        StaffEntity::class,
+        StaffAttendanceEntity::class
     ],
-    version = 14,
+    version = 16,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -64,6 +70,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun electronicsDao(): ElectronicsDao
     abstract fun workshopDao(): WorkshopDao
     abstract fun laundryDao(): LaundryDao
+    abstract fun wholesaleDao(): WholesaleDao
+    abstract fun expenseDao(): ExpenseDao
+    abstract fun staffDao(): StaffDao
 
     companion object {
         @Volatile

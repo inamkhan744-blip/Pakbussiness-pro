@@ -1,6 +1,6 @@
 {
   "name": "PakBusiness Pro",
-  "description": "Multi-tenant offline business management app with Laundry & Dry Cleaners (customer records, order taking for Shirt/Pants/Bedsheet, order tracking Washing->Ironing->Ready->Delivered), Auto Workshop, Electronics & Mobile Shop, Bakery, Tailor, Hotel, Salon, Real Estate, School, Pharmacy, Clinic, Restaurant POS, and Gym memberships in PKR.",
+  "description": "Multi-tenant offline business management app with Wholesale & Distribution (Parties, Udhaar/Khata ledger, bulk orders, payment vouchers), Laundry & Dry Cleaners (customer records, order taking for Shirt/Pants/Bedsheet, order tracking Washing->Ironing->Ready->Delivered), Auto Workshop, Electronics, Bakery, Tailor, Hotel, Salon, Real Estate, School, Pharmacy, Clinic, Restaurant POS, and multi-currency support.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

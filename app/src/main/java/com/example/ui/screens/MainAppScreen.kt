@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.LocalPharmacy
+import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PointOfSale
@@ -44,6 +45,9 @@ import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.ContentCut
 import androidx.compose.material.icons.outlined.Dashboard
@@ -55,6 +59,9 @@ import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.PointOfSale
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Assessment
+import androidx.compose.material.icons.outlined.Badge
+import androidx.compose.material.icons.outlined.TrendingDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -79,6 +86,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -95,6 +103,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.AppointmentEntity
 import com.example.data.BusinessEntity
 import com.example.data.DoctorEntity
+import com.example.data.FeeVoucherEntity
 import com.example.data.GymCheckInEntity
 import com.example.data.GymMemberEntity
 import com.example.data.MedicineEntity
@@ -106,30 +115,34 @@ import com.example.data.RestaurantMenuItemEntity
 import com.example.data.RestaurantOrderEntity
 import com.example.data.RestaurantOrderItemEntity
 import com.example.data.RestaurantTableEntity
-import com.example.data.FeeVoucherEntity
 import com.example.data.SchoolClassEntity
 import com.example.data.StudentAttendanceEntity
 import com.example.data.StudentEntity
 import com.example.ui.BottomNavTab
 import com.example.ui.BusinessViewModel
-import com.example.ui.screens.gym.GymModuleScreen
-import com.example.ui.screens.hospital.HospitalModuleScreen
-import com.example.ui.screens.pharmacy.PharmacyModuleScreen
-import com.example.ui.screens.realestate.RealEstateModuleScreen
-import com.example.ui.screens.salon.SalonModuleScreen
-import com.example.ui.screens.hotel.HotelModuleScreen
-import com.example.ui.screens.tailor.TailorModuleScreen
+import com.example.ui.getTabsForBusiness
 import com.example.ui.screens.bakery.BakeryModuleScreen
 import com.example.ui.screens.electronics.ElectronicsModuleScreen
-import com.example.ui.screens.workshop.WorkshopModuleScreen
+import com.example.ui.screens.gym.GymModuleScreen
+import com.example.ui.screens.hospital.HospitalModuleScreen
+import com.example.ui.screens.hotel.HotelModuleScreen
 import com.example.ui.screens.laundry.LaundryModuleScreen
+import com.example.ui.screens.wholesale.WholesaleModuleScreen
+import com.example.ui.screens.pharmacy.PharmacyModuleScreen
+import com.example.ui.screens.realestate.RealEstateModuleScreen
 import com.example.ui.screens.restaurant.RestaurantModuleScreen
+import com.example.ui.screens.salon.SalonModuleScreen
 import com.example.ui.screens.school.SchoolModuleScreen
 import com.example.ui.screens.tabs.CustomersTab
 import com.example.ui.screens.tabs.DashboardTab
 import com.example.ui.screens.tabs.InventoryTab
 import com.example.ui.screens.tabs.PosTab
 import com.example.ui.screens.tabs.SettingsTab
+import com.example.ui.screens.tabs.ExpensesTab
+import com.example.ui.screens.tabs.StaffTab
+import com.example.ui.screens.tabs.ReportsTab
+import com.example.ui.screens.tailor.TailorModuleScreen
+import com.example.ui.screens.workshop.WorkshopModuleScreen
 import com.example.ui.theme.PakEmeraldContainer
 import com.example.ui.theme.PakEmeraldDark
 import com.example.ui.theme.PakEmeraldPrimary
@@ -159,6 +172,13 @@ val NAV_ITEMS = listOf(
         selectedIcon = Icons.Filled.LocalLaundryService,
         unselectedIcon = Icons.Filled.LocalLaundryService,
         testTag = "nav_laundry"
+    ),
+    NavigationTabItem(
+        tab = BottomNavTab.WHOLESALE,
+        title = "Wholesale",
+        selectedIcon = Icons.Filled.LocalShipping,
+        unselectedIcon = Icons.Filled.LocalShipping,
+        testTag = "nav_wholesale"
     ),
     NavigationTabItem(
         tab = BottomNavTab.WORKSHOP,
@@ -266,6 +286,27 @@ val NAV_ITEMS = listOf(
         testTag = "nav_customers"
     ),
     NavigationTabItem(
+        tab = BottomNavTab.EXPENSES,
+        title = "Kharcha",
+        selectedIcon = Icons.Filled.TrendingDown,
+        unselectedIcon = Icons.Outlined.TrendingDown,
+        testTag = "nav_expenses"
+    ),
+    NavigationTabItem(
+        tab = BottomNavTab.STAFF,
+        title = "Staff",
+        selectedIcon = Icons.Filled.Badge,
+        unselectedIcon = Icons.Outlined.Badge,
+        testTag = "nav_staff"
+    ),
+    NavigationTabItem(
+        tab = BottomNavTab.REPORTS,
+        title = "Reports",
+        selectedIcon = Icons.Filled.Assessment,
+        unselectedIcon = Icons.Outlined.Assessment,
+        testTag = "nav_reports"
+    ),
+    NavigationTabItem(
         tab = BottomNavTab.SETTINGS,
         title = "Settings",
         selectedIcon = Icons.Filled.Settings,
@@ -369,6 +410,30 @@ fun MainAppScreen(
     val scope = rememberCoroutineScope()
     var showTenantSwitchDialog by remember { mutableStateOf(false) }
 
+    // Dynamic filtering of navigation tabs strictly based on activeBusiness.type + ERP suite
+    val bottomBarTabs = remember(activeBusiness?.type) {
+        getTabsForBusiness(activeBusiness?.type)
+    }
+
+    val allowedTabs = remember(bottomBarTabs) {
+        bottomBarTabs + listOf(
+            BottomNavTab.EXPENSES,
+            BottomNavTab.STAFF,
+            BottomNavTab.REPORTS
+        )
+    }
+
+    val filteredNavItems = remember(bottomBarTabs) {
+        NAV_ITEMS.filter { it.tab in bottomBarTabs }
+    }
+
+    // Auto-adjust current tab if switching tenants renders the current tab invalid
+    LaunchedEffect(allowedTabs, currentTab) {
+        if (currentTab !in allowedTabs) {
+            onTabSelected(BottomNavTab.DASHBOARD)
+        }
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -424,7 +489,7 @@ fun MainAppScreen(
                                     color = PakGoldSecondary.copy(alpha = 0.3f)
                                 ) {
                                     Text(
-                                        text = "₨ PKR",
+                                        text = "₨ ${activeBusiness?.currency ?: "PKR"}",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFFFFD54F),
@@ -463,24 +528,29 @@ fun MainAppScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "TENANTS / BUSINESSES",
+                                text = "TENANTS (${allBusinesses.size})",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Text(
-                                text = "${allBusinesses.size} Active",
-                                fontSize = 11.sp,
-                                color = PakEmeraldPrimary,
-                                fontWeight = FontWeight.SemiBold
-                            )
+
+                            TextButton(
+                                onClick = {
+                                    scope.launch { drawerState.close() }
+                                    showTenantSwitchDialog = true
+                                },
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                            ) {
+                                Text("Switch", fontSize = 12.sp, color = PakEmeraldPrimary, fontWeight = FontWeight.Bold)
+                            }
                         }
 
-                        allBusinesses.forEach { biz ->
+                        // Compact list of businesses in Drawer
+                        allBusinesses.take(3).forEach { biz ->
                             val isActive = biz.id == activeBusiness?.id
                             Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = if (isActive) PakEmeraldContainer.copy(alpha = 0.4f) else Color.Transparent,
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isActive) PakEmeraldContainer.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
@@ -489,26 +559,18 @@ fun MainAppScreen(
                                     }
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(24.dp)
-                                                .background(
-                                                    if (isActive) PakEmeraldPrimary else MaterialTheme.colorScheme.surfaceVariant,
-                                                    CircleShape
-                                                ),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            if (isActive) {
-                                                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                            }
+                                        if (isActive) {
+                                            Icon(Icons.Default.Check, contentDescription = null, tint = PakEmeraldPrimary, modifier = Modifier.size(14.dp))
+                                        } else {
+                                            Icon(Icons.Default.Business, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
                                         }
                                         Column {
                                             Text(
@@ -565,7 +627,7 @@ fun MainAppScreen(
 
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-                    // Drawer Navigation Items
+                    // Dynamically Filtered Navigation Items in Drawer
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -573,14 +635,14 @@ fun MainAppScreen(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "MODULES",
+                            text = "MODULES (${activeBusiness?.type ?: "All"})",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 6.dp)
                         )
 
-                        NAV_ITEMS.forEach { item ->
+                        filteredNavItems.forEach { item ->
                             val isSelected = currentTab == item.tab
                             NavigationDrawerItem(
                                 label = {
@@ -593,175 +655,204 @@ fun MainAppScreen(
                                             item.title,
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                         )
-                                        if (item.tab == BottomNavTab.GYM) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = PakGoldSecondary
-                                            ) {
-                                                Text(
-                                                    text = "FEATURED",
-                                                    fontSize = 8.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
+                                        when (item.tab) {
+                                            BottomNavTab.GYM -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = PakGoldSecondary
+                                                ) {
+                                                    Text(
+                                                        text = "GYM",
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
-                                        } else if (item.tab == BottomNavTab.RESTAURANT) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = PakEmeraldPrimary
-                                            ) {
-                                                Text(
-                                                    text = "HOT",
-                                                    fontSize = 8.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
+                                            BottomNavTab.RESTAURANT -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = PakEmeraldPrimary
+                                                ) {
+                                                    Text(
+                                                        text = "CAFE",
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
-                                        } else if (item.tab == BottomNavTab.HOSPITAL) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = Color(0xFF0284C7)
-                                            ) {
-                                                Text(
-                                                    text = "CLINIC",
-                                                    fontSize = 8.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
+                                            BottomNavTab.HOSPITAL -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFF0284C7)
+                                                ) {
+                                                    Text(
+                                                        text = "CLINIC",
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
-                                        } else if (item.tab == BottomNavTab.SCHOOL) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = PakEmeraldPrimary
-                                            ) {
-                                                Text(
-                                                    text = "EDU",
-                                                    fontSize = 8.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
+                                            BottomNavTab.SCHOOL -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = PakEmeraldPrimary
+                                                ) {
+                                                    Text(
+                                                        text = "EDU",
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
-                                        } else if (item.tab == BottomNavTab.REAL_ESTATE) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = PakGoldSecondary
-                                            ) {
-                                                Text(
-                                                    text = "ESTATE",
-                                                    fontSize = 8.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
+                                            BottomNavTab.REAL_ESTATE -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = PakGoldSecondary
+                                                ) {
+                                                    Text(
+                                                        text = "ESTATE",
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
-                                        } else if (item.tab == BottomNavTab.HOTEL) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = Color(0xFF059669)
-                                            ) {
-                                                Text(
-                                                    text = "STAY",
-                                                    fontSize = 8.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
+                                            BottomNavTab.HOTEL -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFF059669)
+                                                ) {
+                                                    Text(
+                                                        text = "STAY",
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
-                                        } else if (item.tab == BottomNavTab.SALON) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = Color(0xFFD81B60)
-                                            ) {
-                                                Text(
-                                                    text = "SALON",
-                                                    fontSize = 8.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
+                                            BottomNavTab.SALON -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFFD81B60)
+                                                ) {
+                                                    Text(
+                                                        text = "SALON",
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
-                                        } else if (item.tab == BottomNavTab.LAUNDRY) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = Color(0xFF0284C7)
-                                            ) {
-                                                Text(
-                                                    text = "CLEAN",
-                                                    fontSize = 8.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
+                                            BottomNavTab.LAUNDRY -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFF0284C7)
+                                                ) {
+                                                    Text(
+                                                        text = "CLEAN",
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
-                                        } else if (item.tab == BottomNavTab.WORKSHOP) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = Color(0xFFEA580C)
-                                            ) {
-                                                Text(
-                                                    text = "GARAGE",
-                                                    fontSize = 8.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
+                                            BottomNavTab.WHOLESALE -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFF00796B)
+                                                ) {
+                                                    Text(
+                                                        text = "BILTY",
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
-                                        } else if (item.tab == BottomNavTab.ELECTRONICS) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = Color(0xFF0284C7)
-                                            ) {
-                                                Text(
-                                                    text = "MOBILE",
-                                                    fontSize = 8.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
+                                            BottomNavTab.WORKSHOP -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFFEA580C)
+                                                ) {
+                                                    Text(
+                                                        text = "GARAGE",
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
-                                        } else if (item.tab == BottomNavTab.BAKERY) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = Color(0xFFD97706)
-                                            ) {
-                                                Text(
-                                                    text = "SWEETS",
-                                                    fontSize = 8.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
+                                            BottomNavTab.ELECTRONICS -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFF0284C7)
+                                                ) {
+                                                    Text(
+                                                        text = "MOBILE",
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
-                                        } else if (item.tab == BottomNavTab.TAILOR) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = Color(0xFF7B1FA2)
-                                            ) {
-                                                Text(
-                                                    text = "BOUTIQUE",
-                                                    fontSize = 8.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
+                                            BottomNavTab.BAKERY -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFFD97706)
+                                                ) {
+                                                    Text(
+                                                        text = "SWEETS",
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
-                                        } else if (item.tab == BottomNavTab.PHARMACY) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = Color(0xFF0D9488)
-                                            ) {
-                                                Text(
-                                                    text = "RX",
-                                                    fontSize = 8.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
+                                            BottomNavTab.TAILOR -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFF7B1FA2)
+                                                ) {
+                                                    Text(
+                                                        text = "BOUTIQUE",
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
+                                            BottomNavTab.PHARMACY -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFF0D9488)
+                                                ) {
+                                                    Text(
+                                                        text = "RX",
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                            else -> {}
                                         }
                                     }
                                 },
@@ -785,6 +876,99 @@ fun MainAppScreen(
                                 modifier = Modifier.padding(vertical = 2.dp)
                             )
                         }
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
+
+                    // ADVANCED ERP & OPERATIONS SECTION IN DRAWER
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "ADVANCED ERP & FINANCE",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+
+                        // 1. Daily Expenses (Kharcha)
+                        NavigationDrawerItem(
+                            label = {
+                                Text(
+                                    "Daily Kharcha (Expenses)",
+                                    fontWeight = if (currentTab == BottomNavTab.EXPENSES) FontWeight.Bold else FontWeight.Medium
+                                )
+                            },
+                            selected = currentTab == BottomNavTab.EXPENSES,
+                            onClick = {
+                                onTabSelected(BottomNavTab.EXPENSES)
+                                scope.launch { drawerState.close() }
+                            },
+                            icon = {
+                                Icon(Icons.Default.TrendingDown, contentDescription = "Kharcha")
+                            },
+                            colors = NavigationDrawerItemDefaults.colors(
+                                selectedContainerColor = PakEmeraldContainer,
+                                selectedIconColor = PakEmeraldPrimary,
+                                selectedTextColor = PakEmeraldPrimary
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.padding(vertical = 2.dp)
+                        )
+
+                        // 2. Staff & Payroll
+                        NavigationDrawerItem(
+                            label = {
+                                Text(
+                                    "Staff Haziri & Salaries",
+                                    fontWeight = if (currentTab == BottomNavTab.STAFF) FontWeight.Bold else FontWeight.Medium
+                                )
+                            },
+                            selected = currentTab == BottomNavTab.STAFF,
+                            onClick = {
+                                onTabSelected(BottomNavTab.STAFF)
+                                scope.launch { drawerState.close() }
+                            },
+                            icon = {
+                                Icon(Icons.Default.Badge, contentDescription = "Staff")
+                            },
+                            colors = NavigationDrawerItemDefaults.colors(
+                                selectedContainerColor = PakEmeraldContainer,
+                                selectedIconColor = PakEmeraldPrimary,
+                                selectedTextColor = PakEmeraldPrimary
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.padding(vertical = 2.dp)
+                        )
+
+                        // 3. Day-End Closing & P&L
+                        NavigationDrawerItem(
+                            label = {
+                                Text(
+                                    "Day-End (Z-Report) & P&L",
+                                    fontWeight = if (currentTab == BottomNavTab.REPORTS) FontWeight.Bold else FontWeight.Medium
+                                )
+                            },
+                            selected = currentTab == BottomNavTab.REPORTS,
+                            onClick = {
+                                onTabSelected(BottomNavTab.REPORTS)
+                                scope.launch { drawerState.close() }
+                            },
+                            icon = {
+                                Icon(Icons.Default.Assessment, contentDescription = "Reports")
+                            },
+                            colors = NavigationDrawerItemDefaults.colors(
+                                selectedContainerColor = PakEmeraldContainer,
+                                selectedIconColor = PakEmeraldPrimary,
+                                selectedTextColor = PakEmeraldPrimary
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.padding(vertical = 2.dp)
+                        )
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -832,6 +1016,7 @@ fun MainAppScreen(
                                 text = when (currentTab) {
                                     BottomNavTab.DASHBOARD -> "Dashboard"
                                     BottomNavTab.LAUNDRY -> "Laundry & Dry Cleaners"
+                                    BottomNavTab.WHOLESALE -> "Wholesale & Distribution"
                                     BottomNavTab.WORKSHOP -> "Auto Workshop & Garage"
                                     BottomNavTab.ELECTRONICS -> "Electronics & Mobile Shop"
                                     BottomNavTab.BAKERY -> "Bakery & Sweets"
@@ -847,6 +1032,9 @@ fun MainAppScreen(
                                     BottomNavTab.POS -> "POS Terminal"
                                     BottomNavTab.INVENTORY -> "Inventory"
                                     BottomNavTab.CUSTOMERS -> "Customers"
+                                    BottomNavTab.EXPENSES -> "Daily Kharcha (Expenses)"
+                                    BottomNavTab.STAFF -> "Staff & Haziri Payroll"
+                                    BottomNavTab.REPORTS -> "Day-End & Reports"
                                     BottomNavTab.SETTINGS -> "Settings"
                                 },
                                 fontSize = 18.sp,
@@ -854,7 +1042,7 @@ fun MainAppScreen(
                             )
                             if (activeBusiness != null) {
                                 Text(
-                                    text = "${activeBusiness.name} (PKR)",
+                                    text = "${activeBusiness.name} (${activeBusiness.currency})",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = PakEmeraldPrimary
@@ -940,7 +1128,7 @@ fun MainAppScreen(
                     tonalElevation = 6.dp,
                     modifier = Modifier.testTag("bottom_navigation_bar")
                 ) {
-                    NAV_ITEMS.forEach { item ->
+                    filteredNavItems.forEach { item ->
                         val isSelected = currentTab == item.tab
                         NavigationBarItem(
                             selected = isSelected,
@@ -984,6 +1172,11 @@ fun MainAppScreen(
                     BottomNavTab.LAUNDRY -> {
                         if (viewModel != null) {
                             LaundryModuleScreen(viewModel = viewModel)
+                        }
+                    }
+                    BottomNavTab.WHOLESALE -> {
+                        if (viewModel != null) {
+                            WholesaleModuleScreen(viewModel = viewModel)
                         }
                     }
                     BottomNavTab.WORKSHOP -> {
@@ -1113,6 +1306,30 @@ fun MainAppScreen(
                     BottomNavTab.CUSTOMERS -> CustomersTab(
                         business = activeBusiness
                     )
+                    BottomNavTab.EXPENSES -> {
+                        if (viewModel != null) {
+                            ExpensesTab(
+                                business = activeBusiness,
+                                viewModel = viewModel
+                            )
+                        }
+                    }
+                    BottomNavTab.STAFF -> {
+                        if (viewModel != null) {
+                            StaffTab(
+                                business = activeBusiness,
+                                viewModel = viewModel
+                            )
+                        }
+                    }
+                    BottomNavTab.REPORTS -> {
+                        if (viewModel != null) {
+                            ReportsTab(
+                                business = activeBusiness,
+                                viewModel = viewModel
+                            )
+                        }
+                    }
                     BottomNavTab.SETTINGS -> SettingsTab(
                         activeBusiness = activeBusiness,
                         allBusinesses = allBusinesses,
@@ -1181,13 +1398,20 @@ fun MainAppScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
+
                                 if (isActive) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "Active",
-                                        tint = PakEmeraldPrimary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = PakEmeraldPrimary
+                                    ) {
+                                        Text(
+                                            text = "ACTIVE",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1202,7 +1426,13 @@ fun MainAppScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary)
                 ) {
-                    Text("+ New Business")
+                    Icon(
+                        imageVector = Icons.Default.AddBusiness,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Add New Business")
                 }
             },
             dismissButton = {

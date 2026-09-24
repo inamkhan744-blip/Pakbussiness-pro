@@ -60,6 +60,15 @@ import com.example.data.WorkshopRepository
 import com.example.data.LaundryCustomerEntity
 import com.example.data.LaundryOrderEntity
 import com.example.data.LaundryRepository
+import com.example.data.WholesalePartyEntity
+import com.example.data.WholesaleBulkOrderEntity
+import com.example.data.WholesalePaymentEntity
+import com.example.data.WholesaleRepository
+import com.example.data.ExpenseEntity
+import com.example.data.ExpenseRepository
+import com.example.data.StaffEntity
+import com.example.data.StaffAttendanceEntity
+import com.example.data.StaffRepository
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -83,6 +92,7 @@ enum class Screen {
 enum class BottomNavTab {
     DASHBOARD,
     LAUNDRY,
+    WHOLESALE,
     WORKSHOP,
     ELECTRONICS,
     BAKERY,
@@ -98,6 +108,9 @@ enum class BottomNavTab {
     POS,
     INVENTORY,
     CUSTOMERS,
+    EXPENSES,
+    STAFF,
+    REPORTS,
     SETTINGS
 }
 
@@ -118,6 +131,9 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
     private val electronicsRepository: ElectronicsRepository
     private val workshopRepository: WorkshopRepository
     private val laundryRepository: LaundryRepository
+    private val wholesaleRepository: WholesaleRepository
+    private val expenseRepository: ExpenseRepository
+    private val staffRepository: StaffRepository
 
     val businesses: StateFlow<List<BusinessEntity>>
     val activeBusiness: StateFlow<BusinessEntity?>
@@ -210,6 +226,16 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
     val laundryCustomers: StateFlow<List<LaundryCustomerEntity>>
     val laundryOrders: StateFlow<List<LaundryOrderEntity>>
 
+    // --- Wholesale & Distributor State ---
+    val wholesaleParties: StateFlow<List<WholesalePartyEntity>>
+    val wholesaleBulkOrders: StateFlow<List<WholesaleBulkOrderEntity>>
+    val wholesalePayments: StateFlow<List<WholesalePaymentEntity>>
+
+    // --- Expense & Staff State ---
+    val expenses: StateFlow<List<ExpenseEntity>>
+    val staffMembers: StateFlow<List<StaffEntity>>
+    val staffAttendanceRecords: StateFlow<List<StaffAttendanceEntity>>
+
     private val _currentScreen = MutableStateFlow(Screen.SPLASH)
     val currentScreen: StateFlow<Screen> = _currentScreen.asStateFlow()
 
@@ -235,6 +261,9 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
         electronicsRepository = ElectronicsRepository(database.electronicsDao())
         workshopRepository = WorkshopRepository(database.workshopDao())
         laundryRepository = LaundryRepository(database.laundryDao())
+        wholesaleRepository = WholesaleRepository(database.wholesaleDao())
+        expenseRepository = ExpenseRepository(database.expenseDao())
+        staffRepository = StaffRepository(database.staffDao())
 
         businesses = businessRepository.allBusinesses.stateIn(
             scope = viewModelScope,
@@ -762,6 +791,80 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
         laundryOrders = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
                 laundryRepository.getOrders(biz.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+        wholesaleParties = activeBusiness.flatMapLatest { biz ->
+            if (biz != null) {
+                wholesaleRepository.seedSampleWholesaleDataIfEmpty(biz.id)
+                wholesaleRepository.getParties(biz.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+        wholesaleBulkOrders = activeBusiness.flatMapLatest { biz ->
+            if (biz != null) {
+                wholesaleRepository.getBulkOrders(biz.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+        wholesalePayments = activeBusiness.flatMapLatest { biz ->
+            if (biz != null) {
+                wholesaleRepository.getPayments(biz.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+        expenses = activeBusiness.flatMapLatest { biz ->
+            if (biz != null) {
+                expenseRepository.getExpenses(biz.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+        staffMembers = activeBusiness.flatMapLatest { biz ->
+            if (biz != null) {
+                staffRepository.getStaff(biz.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+        val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        staffAttendanceRecords = activeBusiness.flatMapLatest { biz ->
+            if (biz != null) {
+                staffRepository.getAttendance(biz.id, todayDate)
             } else {
                 flowOf(emptyList())
             }
@@ -1845,6 +1948,131 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
     fun updateLaundryOrderPayment(orderId: Long, additionalPayment: Double, newBalance: Double, paymentStatus: String) {
         viewModelScope.launch {
             laundryRepository.updateOrderPayment(orderId, additionalPayment, newBalance, paymentStatus)
+        }
+    }
+
+    // ==========================================
+    // Wholesale & Distributor Actions
+    // ==========================================
+    fun saveWholesaleParty(party: WholesalePartyEntity) {
+        viewModelScope.launch {
+            val bizId = activeBusiness.value?.id ?: return@launch
+            if (party.id == 0L) {
+                wholesaleRepository.insertParty(party.copy(businessId = bizId))
+            } else {
+                wholesaleRepository.updateParty(party)
+            }
+        }
+    }
+
+    fun deleteWholesaleParty(party: WholesalePartyEntity) {
+        viewModelScope.launch {
+            wholesaleRepository.deleteParty(party)
+        }
+    }
+
+    fun saveWholesaleBulkOrder(order: WholesaleBulkOrderEntity) {
+        viewModelScope.launch {
+            val bizId = activeBusiness.value?.id ?: return@launch
+            if (order.id == 0L) {
+                wholesaleRepository.insertBulkOrder(order.copy(businessId = bizId))
+            } else {
+                wholesaleRepository.updateBulkOrder(order)
+            }
+        }
+    }
+
+    fun updateWholesaleOrderStatus(orderId: Long, status: String) {
+        viewModelScope.launch {
+            wholesaleRepository.updateOrderStatus(orderId, status)
+        }
+    }
+
+    fun deleteWholesaleBulkOrder(order: WholesaleBulkOrderEntity) {
+        viewModelScope.launch {
+            wholesaleRepository.deleteBulkOrder(order)
+        }
+    }
+
+    fun recordWholesalePayment(payment: WholesalePaymentEntity) {
+        viewModelScope.launch {
+            val bizId = activeBusiness.value?.id ?: return@launch
+            wholesaleRepository.recordPayment(payment.copy(businessId = bizId))
+        }
+    }
+
+    fun deleteWholesalePayment(payment: WholesalePaymentEntity) {
+        viewModelScope.launch {
+            wholesaleRepository.deletePayment(payment)
+        }
+    }
+
+    // ==========================================
+    // Expense & Cash Flow Actions
+    // ==========================================
+    fun saveExpense(expense: ExpenseEntity) {
+        viewModelScope.launch {
+            val bizId = activeBusiness.value?.id ?: return@launch
+            if (expense.id == 0L) {
+                expenseRepository.saveExpense(expense.copy(businessId = bizId))
+            } else {
+                expenseRepository.updateExpense(expense)
+            }
+        }
+    }
+
+    fun deleteExpense(id: Long) {
+        viewModelScope.launch {
+            expenseRepository.deleteExpense(id)
+        }
+    }
+
+    // ==========================================
+    // Staff & Payroll Actions
+    // ==========================================
+    fun saveStaffMember(staff: StaffEntity) {
+        viewModelScope.launch {
+            val bizId = activeBusiness.value?.id ?: return@launch
+            if (staff.id == 0L) {
+                staffRepository.saveStaff(staff.copy(businessId = bizId))
+            } else {
+                staffRepository.updateStaff(staff)
+            }
+        }
+    }
+
+    fun deleteStaffMember(id: Long) {
+        viewModelScope.launch {
+            staffRepository.deleteStaff(id)
+        }
+    }
+
+    fun addStaffAdvance(staffId: Long, amount: Double) {
+        viewModelScope.launch {
+            staffRepository.addAdvance(staffId, amount)
+        }
+    }
+
+    fun clearStaffAdvance(staffId: Long) {
+        viewModelScope.launch {
+            staffRepository.clearAdvance(staffId)
+        }
+    }
+
+    fun recordStaffAttendance(staffId: Long, staffName: String, status: String, notes: String) {
+        viewModelScope.launch {
+            val bizId = activeBusiness.value?.id ?: return@launch
+            val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            staffRepository.recordAttendance(
+                StaffAttendanceEntity(
+                    businessId = bizId,
+                    staffId = staffId,
+                    staffName = staffName,
+                    dateString = todayDate,
+                    status = status,
+                    notes = notes
+                )
+            )
         }
     }
 
