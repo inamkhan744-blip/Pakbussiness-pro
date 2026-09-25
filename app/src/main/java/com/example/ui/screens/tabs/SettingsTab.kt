@@ -1,5 +1,6 @@
 package com.example.ui.screens.tabs
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -20,27 +22,36 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddBusiness
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -53,9 +64,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.BusinessEntity
+import com.example.ui.AppLanguage
+import com.example.ui.BusinessViewModel
+import com.example.ui.Localization
+import com.example.ui.screens.tools.PakBusinessToolsScreen
 import com.example.ui.theme.PakEmeraldContainer
 import com.example.ui.theme.PakEmeraldDark
 import com.example.ui.theme.PakEmeraldPrimary
@@ -70,9 +88,15 @@ fun SettingsTab(
     onDeleteBusiness: (Long) -> Unit,
     onAddNewBusiness: () -> Unit,
     onUpdateBusiness: (BusinessEntity) -> Unit,
+    viewModel: BusinessViewModel? = null,
+    appLanguage: AppLanguage = AppLanguage.ENGLISH,
+    onSelectLanguage: (AppLanguage) -> Unit = {},
+    isDarkMode: Boolean = false,
+    onToggleDarkMode: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showEditProfileDialog by remember { mutableStateOf(false) }
+    var showToolsDialog by remember { mutableStateOf(false) }
 
     var editName by remember(activeBusiness) { mutableStateOf(activeBusiness?.name ?: "") }
     var editType by remember(activeBusiness) { mutableStateOf(activeBusiness?.type ?: "") }
@@ -83,6 +107,15 @@ fun SettingsTab(
 
     val supportedCurrencies = listOf("PKR", "USD", "EUR", "GBP", "AED", "SAR", "INR", "CAD")
 
+    // Security state from ViewModel
+    val isSecurityEnabled by (viewModel?.isSecurityEnabled?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(false) })
+    val currentSecUser by (viewModel?.securityUsername?.collectAsStateWithLifecycle() ?: remember { mutableStateOf("admin") })
+
+    var secEnabledState by remember(isSecurityEnabled) { mutableStateOf(isSecurityEnabled) }
+    var secUsernameInput by remember(currentSecUser) { mutableStateOf(currentSecUser) }
+    var secPasswordInput by remember { mutableStateOf("") }
+    var secSavedMessage by remember { mutableStateOf("") }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -90,7 +123,7 @@ fun SettingsTab(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Section: Active Business Profile
+        // Section: Active Business Profile Card
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -98,7 +131,7 @@ fun SettingsTab(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Business Profile",
+                    text = Localization.getString("business_profile_logo", appLanguage),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -113,9 +146,86 @@ fun SettingsTab(
 
         item {
             Card(
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = PakEmeraldContainer,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Business,
+                                    contentDescription = null,
+                                    tint = PakEmeraldPrimary,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = activeBusiness?.name ?: "No Business Selected",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "${activeBusiness?.type ?: "General"} • Currency: ${activeBusiness?.currency ?: "PKR"}",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Text("Owner / پروپرائیٹر", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(activeBusiness?.ownerName ?: "Not set", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("Phone / WhatsApp", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(activeBusiness?.phone ?: "Not set", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+
+                    if (!activeBusiness?.address.isNullOrBlank()) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = PakEmeraldPrimary, modifier = Modifier.size(14.dp))
+                            Text(activeBusiness?.address ?: "", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Section: Optional App Security & Password Lock (User Login)
+        item {
+            Text(
+                text = "App Security & Password Lock (اختیاری پاس ورڈ)",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -127,65 +237,160 @@ fun SettingsTab(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(
-                                text = activeBusiness?.name ?: "Business Name",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = activeBusiness?.type ?: "General Store",
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Icon(Icons.Default.Security, contentDescription = null, tint = if (secEnabledState) PakEmeraldPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Column {
+                                Text("Require Password / PIN on Launch", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                Text("Optional security lock to protect your accounts", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
 
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = PakEmeraldContainer
-                        ) {
-                            Text(
-                                text = activeBusiness?.currency ?: "PKR",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                color = PakEmeraldPrimary,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        Switch(
+                            checked = secEnabledState,
+                            onCheckedChange = { isChecked ->
+                                secEnabledState = isChecked
+                                if (!isChecked && viewModel != null) {
+                                    viewModel.configureSecurity(false, secUsernameInput, "")
+                                    secSavedMessage = "Security Lock disabled. App will open directly."
+                                }
+                            },
+                            colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = PakEmeraldPrimary)
+                        )
+                    }
+
+                    AnimatedVisibility(visible = secEnabledState) {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            OutlinedTextField(
+                                value = secUsernameInput,
+                                onValueChange = { secUsernameInput = it },
+                                label = { Text("Login Username (صارف کا نام)") },
+                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = PakEmeraldPrimary) },
+                                singleLine = true,
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth()
                             )
-                        }
-                    }
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(Icons.Default.Person, contentDescription = null, tint = PakEmeraldPrimary, modifier = Modifier.size(18.dp))
-                        Text(text = "Owner: ${activeBusiness?.ownerName ?: "Not Set"}", fontSize = 13.sp)
-                    }
+                            OutlinedTextField(
+                                value = secPasswordInput,
+                                onValueChange = { secPasswordInput = it },
+                                label = { Text("New PIN / Password (پاس ورڈ یا پن)") },
+                                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = PakEmeraldPrimary) },
+                                visualTransformation = PasswordVisualTransformation(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            )
 
-                    if (!activeBusiness?.phone.isNullOrBlank()) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(Icons.Default.Phone, contentDescription = null, tint = PakEmeraldPrimary, modifier = Modifier.size(18.dp))
-                            Text(text = activeBusiness.phone, fontSize = 13.sp)
-                        }
-                    }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        if (viewModel != null) {
+                                            viewModel.configureSecurity(true, secUsernameInput, secPasswordInput)
+                                            secSavedMessage = "Security settings saved! Password enabled."
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Save Password")
+                                }
 
-                    if (!activeBusiness?.address.isNullOrBlank()) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = PakEmeraldPrimary, modifier = Modifier.size(18.dp))
-                            Text(text = activeBusiness.address, fontSize = 13.sp)
+                                OutlinedButton(
+                                    onClick = { viewModel?.lockApp() },
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Lock App Now")
+                                }
+                            }
+
+                            if (secSavedMessage.isNotEmpty()) {
+                                Text(
+                                    text = secSavedMessage,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = PakEmeraldPrimary
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        // Section: Multi-Tenant Business Management
+        // Section: Pakistani Business Utility Calculators
+        item {
+            Text(
+                text = "Business Utilities & Calculators (کاروباری حساب کتاب)",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = PakGoldContainer.copy(alpha = 0.4f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showToolsDialog = true }
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = PakGoldSecondary,
+                        modifier = Modifier.size(46.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Calculate,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Cash Galla Counter & Mandi / Gold Converters",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = "روپوں کی گنتی، من اور کلو، سونا تولہ، گز اور میٹر حساب",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Button(
+                        onClick = { showToolsDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text("Open Tools", fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+
+        // Section: Multi-Business Registry
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -194,7 +399,7 @@ fun SettingsTab(
             ) {
                 Column {
                     Text(
-                        text = "Multi-Tenant Switcher",
+                        text = "Registered Businesses",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -248,27 +453,22 @@ fun SettingsTab(
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
-                                .background(
-                                    if (isActive) PakEmeraldPrimary else MaterialTheme.colorScheme.surfaceVariant,
-                                    CircleShape
-                                ),
+                                .background(if (isActive) PakEmeraldPrimary else MaterialTheme.colorScheme.surfaceVariant, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (isActive) {
-                                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                            } else {
-                                Icon(Icons.Default.Business, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
-                            }
+                            Text(
+                                text = business.name.take(2).uppercase(),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = if (isActive) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
 
                         Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(
                                     text = business.name,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
                                     fontSize = 14.sp
                                 )
                                 if (isActive) {
@@ -281,22 +481,22 @@ fun SettingsTab(
                                             fontSize = 9.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color.White,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                                         )
                                     }
                                 }
                             }
                             Text(
-                                text = "${business.type} • Owner: ${business.ownerName}",
-                                fontSize = 12.sp,
+                                text = "${business.type} • ₨ ${business.currency}",
+                                fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         if (!isActive) {
-                            OutlinedButton(
+                            Button(
                                 onClick = { onSwitchBusiness(business.id) },
                                 shape = RoundedCornerShape(8.dp),
                                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
@@ -376,13 +576,13 @@ fun SettingsTab(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "PakBusiness Pro v1.0",
+                    text = "PakBusiness Pro v1.0 • Enterprise Edition",
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Multi-Tenant Offline Business Management Framework",
+                    text = "Multi-Tenant Offline Suite for Phones, Tablets & Computers",
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
@@ -457,47 +657,21 @@ fun SettingsTab(
                             }
                         }
                     }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        supportedCurrencies.drop(4).forEach { cur ->
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = if (editCurrency == cur) PakEmeraldPrimary else MaterialTheme.colorScheme.surfaceVariant,
-                                modifier = Modifier
-                                    .clickable { editCurrency = cur }
-                                    .padding(vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = cur,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (editCurrency == cur) Color.White else MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                )
-                            }
-                        }
-                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        if (editName.isNotBlank() && editOwner.isNotBlank()) {
-                            onUpdateBusiness(
-                                activeBusiness.copy(
-                                    name = editName.trim(),
-                                    type = editType.trim(),
-                                    ownerName = editOwner.trim(),
-                                    phone = editPhone.trim(),
-                                    address = editAddress.trim(),
-                                    currency = editCurrency
-                                )
-                            )
-                            showEditProfileDialog = false
-                        }
+                        val updated = activeBusiness.copy(
+                            name = editName.ifBlank { activeBusiness.name },
+                            type = editType.ifBlank { activeBusiness.type },
+                            ownerName = editOwner,
+                            phone = editPhone,
+                            address = editAddress,
+                            currency = editCurrency
+                        )
+                        onUpdateBusiness(updated)
+                        showEditProfileDialog = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary)
                 ) {
@@ -507,6 +681,32 @@ fun SettingsTab(
             dismissButton = {
                 TextButton(onClick = { showEditProfileDialog = false }) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Tools Dialog (Cash Galla, Mandi, Gold, Fabric, Tax)
+    if (showToolsDialog) {
+        AlertDialog(
+            onDismissRequest = { showToolsDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Default.Calculate, contentDescription = null, tint = PakEmeraldPrimary)
+                    Text("Pakistani Business Utilities", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                }
+            },
+            text = {
+                Box(modifier = Modifier.height(420.dp).fillMaxWidth()) {
+                    PakBusinessToolsScreen(appLanguage = appLanguage)
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showToolsDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary)
+                ) {
+                    Text("Close")
                 }
             }
         )

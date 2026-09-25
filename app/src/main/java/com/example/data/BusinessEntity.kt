@@ -13,6 +13,8 @@ data class BusinessEntity(
     val phone: String,
     val address: String,
     val currency: String = "PKR",
+    val logoUri: String = "",
+    val tagline: String = "",
     val isActive: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )

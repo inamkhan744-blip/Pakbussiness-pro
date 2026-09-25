@@ -31,7 +31,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            PakBusinessTheme {
+            val isDark by viewModel.isDarkMode.collectAsStateWithLifecycle()
+            PakBusinessTheme(darkTheme = isDark) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -52,6 +53,8 @@ fun PakBusinessApp(
     val currentTab by viewModel.currentTab.collectAsStateWithLifecycle()
     val activeBusiness by viewModel.activeBusiness.collectAsStateWithLifecycle()
     val businesses by viewModel.businesses.collectAsStateWithLifecycle()
+    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
+    val appLanguage by viewModel.appLanguage.collectAsStateWithLifecycle()
 
     val gymMembers by viewModel.gymMembers.collectAsStateWithLifecycle()
     val todayGymCheckIns by viewModel.todayGymCheckIns.collectAsStateWithLifecycle()
@@ -92,7 +95,7 @@ fun PakBusinessApp(
             Screen.BUSINESS_SETUP -> {
                 val hasExistingBusinesses = businesses.isNotEmpty()
                 BusinessSetupScreen(
-                    onSaveBusiness = { name, type, owner, phone, address, currency ->
+                    onSaveBusiness = { name, type, owner, phone, address, currency, logoUri, tagline ->
                         viewModel.createBusiness(
                             name = name,
                             type = type,
@@ -100,6 +103,8 @@ fun PakBusinessApp(
                             phone = phone,
                             address = address,
                             currency = currency,
+                            logoUri = logoUri,
+                            tagline = tagline,
                             onSuccess = {
                                 viewModel.navigateTo(Screen.MAIN_APP)
                             }
@@ -110,7 +115,11 @@ fun PakBusinessApp(
                         if (hasExistingBusinesses) {
                             viewModel.navigateTo(Screen.MAIN_APP)
                         }
-                    }
+                    },
+                    appLanguage = appLanguage,
+                    onSelectLanguage = { viewModel.setAppLanguage(it) },
+                    isDarkMode = isDarkMode,
+                    onToggleDarkMode = { viewModel.toggleDarkMode() }
                 )
             }
             Screen.MAIN_APP -> {
@@ -311,7 +320,11 @@ fun PakBusinessApp(
                     onUpdateBusiness = { updatedBiz ->
                         viewModel.updateBusiness(updatedBiz)
                     },
-                    viewModel = viewModel
+                    viewModel = viewModel,
+                    appLanguage = appLanguage,
+                    onSelectLanguage = { viewModel.setAppLanguage(it) },
+                    isDarkMode = isDarkMode,
+                    onToggleDarkMode = { viewModel.toggleDarkMode() }
                 )
             }
         }

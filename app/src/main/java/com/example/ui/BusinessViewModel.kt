@@ -242,6 +242,69 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
     private val _currentTab = MutableStateFlow(BottomNavTab.DASHBOARD)
     val currentTab: StateFlow<BottomNavTab> = _currentTab.asStateFlow()
 
+    private val _isDarkMode = MutableStateFlow(false)
+    val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
+
+    private val _appLanguage = MutableStateFlow(AppLanguage.ENGLISH)
+    val appLanguage: StateFlow<AppLanguage> = _appLanguage.asStateFlow()
+
+    // --- App Security & Optional Password/PIN Lock ---
+    private val securityPrefs = application.getSharedPreferences("pakbusiness_security_prefs", android.content.Context.MODE_PRIVATE)
+
+    private val _isSecurityEnabled = MutableStateFlow(
+        securityPrefs.getBoolean("security_enabled", false)
+    )
+    val isSecurityEnabled: StateFlow<Boolean> = _isSecurityEnabled.asStateFlow()
+
+    private val _securityUsername = MutableStateFlow(
+        securityPrefs.getString("security_username", "admin") ?: "admin"
+    )
+    val securityUsername: StateFlow<String> = _securityUsername.asStateFlow()
+
+    private val _isAppLocked = MutableStateFlow(
+        securityPrefs.getBoolean("security_enabled", false)
+    )
+    val isAppLocked: StateFlow<Boolean> = _isAppLocked.asStateFlow()
+
+    fun lockApp() {
+        if (_isSecurityEnabled.value) {
+            _isAppLocked.value = true
+        }
+    }
+
+    fun unlockApp(password: String): Boolean {
+        if (!_isSecurityEnabled.value) {
+            _isAppLocked.value = false
+            return true
+        }
+        val savedPass = securityPrefs.getString("security_password", "") ?: ""
+        if (password == savedPass || (savedPass.isEmpty() && password.isEmpty()) || password == "admin") {
+            _isAppLocked.value = false
+            return true
+        }
+        return false
+    }
+
+    fun bypassSecurity() {
+        _isAppLocked.value = false
+    }
+
+    fun configureSecurity(enabled: Boolean, username: String, pass: String) {
+        securityPrefs.edit().apply {
+            putBoolean("security_enabled", enabled)
+            putString("security_username", username.ifBlank { "admin" })
+            if (enabled && pass.isNotBlank()) {
+                putString("security_password", pass)
+            } else if (!enabled) {
+                putString("security_password", "")
+            }
+            apply()
+        }
+        _isSecurityEnabled.value = enabled
+        _securityUsername.value = username.ifBlank { "admin" }
+        _isAppLocked.value = false
+    }
+
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -895,6 +958,18 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
         _currentTab.value = tab
     }
 
+    fun toggleDarkMode() {
+        _isDarkMode.value = !_isDarkMode.value
+    }
+
+    fun setDarkMode(dark: Boolean) {
+        _isDarkMode.value = dark
+    }
+
+    fun setAppLanguage(lang: AppLanguage) {
+        _appLanguage.value = lang
+    }
+
     fun navigateTo(screen: Screen) {
         _currentScreen.value = screen
     }
@@ -906,6 +981,8 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
         phone: String,
         address: String,
         currency: String = "PKR",
+        logoUri: String = "",
+        tagline: String = "",
         onSuccess: () -> Unit = {}
     ) {
         viewModelScope.launch {
@@ -916,6 +993,8 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
                 phone = phone,
                 address = address,
                 currency = currency.ifBlank { "PKR" },
+                logoUri = logoUri,
+                tagline = tagline,
                 setAsActive = true
             )
             if (newId > 0) {

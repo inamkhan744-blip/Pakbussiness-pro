@@ -16,6 +16,8 @@ class BusinessRepository(private val dao: BusinessDao) {
         phone: String,
         address: String,
         currency: String = "PKR",
+        logoUri: String = "",
+        tagline: String = "",
         setAsActive: Boolean = true
     ): Long {
         if (setAsActive) {
@@ -28,6 +30,8 @@ class BusinessRepository(private val dao: BusinessDao) {
             phone = phone.trim(),
             address = address.trim(),
             currency = currency.trim(),
+            logoUri = logoUri.trim(),
+            tagline = tagline.trim(),
             isActive = setAsActive
         )
         val newId = dao.insertBusiness(business)
