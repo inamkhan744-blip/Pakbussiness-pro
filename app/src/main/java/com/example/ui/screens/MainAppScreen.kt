@@ -1759,19 +1759,21 @@ fun MainAppScreen(
                             )
                         }
                     }
-                    BottomNavTab.SETTINGS -> SettingsTab(
-                        activeBusiness = activeBusiness,
-                        allBusinesses = allBusinesses,
-                        onSwitchBusiness = onSwitchBusiness,
-                        onDeleteBusiness = onDeleteBusiness,
-                        onAddNewBusiness = onAddNewBusiness,
-                        onUpdateBusiness = onUpdateBusiness
-                    )
+                                            BottomNavTab.SETTINGS -> SettingsTab(
+                            activeBusiness = activeBusiness,
+                            allBusinesses = allBusinesses,
+                            onSwitchBusiness = onSwitchBusiness,
+                            onDeleteBusiness = onDeleteBusiness,
+                            onAddNewBusiness = onAddNewBusiness,
+                            onUpdateBusiness = onUpdateBusiness
+                        )
+                    }
                 }
             }
         }
     }
-}
+        ) // ModalNavigationDrawer closing
+    } // MainAppScreen function closing
 
     // Quick Tenant Switch Dialog
     if (showTenantSwitchDialog) {
