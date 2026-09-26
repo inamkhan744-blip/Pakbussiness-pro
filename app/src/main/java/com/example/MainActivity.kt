@@ -16,6 +16,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.BottomNavTab
 import com.example.ui.BusinessViewModel
 import com.example.ui.Screen
+import com.example.ui.screens.AppLockScreen
 import com.example.ui.screens.BusinessSetupScreen
 import com.example.ui.screens.MainAppScreen
 import com.example.ui.screens.SplashScreen
@@ -82,12 +83,23 @@ fun PakBusinessApp(
     val schoolFeeVouchers by viewModel.schoolFeeVouchers.collectAsStateWithLifecycle()
     val schoolAttendanceRecords by viewModel.schoolAttendanceRecords.collectAsStateWithLifecycle()
     val selectedAttendanceDate by viewModel.selectedAttendanceDate.collectAsStateWithLifecycle()
+    val isAppLocked by viewModel.isAppLocked.collectAsStateWithLifecycle()
+    val securityUsername by viewModel.securityUsername.collectAsStateWithLifecycle()
 
-    Crossfade(
-        targetState = currentScreen,
-        label = "screenTransition",
-        modifier = modifier
-    ) { screen ->
+    if (isAppLocked) {
+        AppLockScreen(
+            savedUsername = securityUsername,
+            onUnlock = { password -> viewModel.unlockApp(password) },
+            onBypassSecurity = { viewModel.bypassSecurity() },
+            appLanguage = appLanguage,
+            businessName = activeBusiness?.name ?: "PakBusiness Pro"
+        )
+    } else {
+        Crossfade(
+            targetState = currentScreen,
+            label = "screenTransition",
+            modifier = modifier
+        ) { screen ->
         when (screen) {
             Screen.SPLASH -> {
                 SplashScreen()
@@ -329,4 +341,5 @@ fun PakBusinessApp(
             }
         }
     }
+}
 }

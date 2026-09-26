@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -1759,21 +1761,19 @@ fun MainAppScreen(
                             )
                         }
                     }
-                                            BottomNavTab.SETTINGS -> SettingsTab(
-                            activeBusiness = activeBusiness,
-                            allBusinesses = allBusinesses,
-                            onSwitchBusiness = onSwitchBusiness,
-                            onDeleteBusiness = onDeleteBusiness,
-                            onAddNewBusiness = onAddNewBusiness,
-                            onUpdateBusiness = onUpdateBusiness
-                        )
-                    }
+                    BottomNavTab.SETTINGS -> SettingsTab(
+                        activeBusiness = activeBusiness,
+                        allBusinesses = allBusinesses,
+                        onSwitchBusiness = onSwitchBusiness,
+                        onDeleteBusiness = onDeleteBusiness,
+                        onAddNewBusiness = onAddNewBusiness,
+                        onUpdateBusiness = onUpdateBusiness
+                    )
                 }
             }
         }
     }
-        ) // ModalNavigationDrawer closing
-    } // MainAppScreen function closing
+}
 
     // Quick Tenant Switch Dialog
     if (showTenantSwitchDialog) {
@@ -1874,4 +1874,42 @@ fun MainAppScreen(
             }
         )
     }
+
+    if (showBusinessToolsDialog) {
+        Dialog(
+            onDismissRequest = { showBusinessToolsDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.background,
+                tonalElevation = 8.dp
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Pakistani Business Utilities",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                        IconButton(onClick = { showBusinessToolsDialog = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        }
+                    }
+                    PakBusinessToolsScreen(appLanguage = appLanguage)
+                }
+            }
+        }
+    }
+}
+}
 }
