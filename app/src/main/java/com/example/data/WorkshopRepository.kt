@@ -71,6 +71,7 @@ class WorkshopRepository(private val workshopDao: WorkshopDao) {
         workshopDao.updateJobCardPayment(jobCardId, deposit, balance)
 
     suspend fun seedSampleWorkshopDataIfEmpty(businessId: Long) {
+        return // Disabled: do not seed fake workshop entries
         val vCount = workshopDao.getVehicleCount(businessId)
         val mCount = workshopDao.getMechanicCount(businessId)
         val jCount = workshopDao.getJobCardCount(businessId)

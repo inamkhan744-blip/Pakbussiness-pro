@@ -1767,7 +1767,12 @@ fun MainAppScreen(
                         onSwitchBusiness = onSwitchBusiness,
                         onDeleteBusiness = onDeleteBusiness,
                         onAddNewBusiness = onAddNewBusiness,
-                        onUpdateBusiness = onUpdateBusiness
+                        onUpdateBusiness = onUpdateBusiness,
+                        viewModel = viewModel,
+                        appLanguage = appLanguage,
+                        onSelectLanguage = onSelectLanguage,
+                        isDarkMode = isDarkMode,
+                        onToggleDarkMode = onToggleDarkMode
                     )
                 }
             }

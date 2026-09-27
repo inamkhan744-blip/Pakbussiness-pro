@@ -139,6 +139,7 @@ class SchoolRepository(private val schoolDao: SchoolDao) {
     }
 
     suspend fun seedSampleSchoolDataIfEmpty(businessId: Long) {
+        return // Disabled: do not seed fake school entries
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             val count = schoolDao.getStudentsCount(businessId)
             if (count > 0) return@withContext

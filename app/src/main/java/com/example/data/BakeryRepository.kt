@@ -56,6 +56,7 @@ class BakeryRepository(private val bakeryDao: BakeryDao) {
         bakeryDao.updateCakeOrderPayment(orderId, advance, balance)
 
     suspend fun seedSampleBakeryDataIfEmpty(businessId: Long) {
+        return // Disabled: do not seed fake bakery entries
         val existingOrdersCount = bakeryDao.getCakeOrderCount(businessId)
         val existingItemCount = bakeryDao.getItemCount(businessId)
         if (existingOrdersCount > 0 && existingItemCount > 0) return

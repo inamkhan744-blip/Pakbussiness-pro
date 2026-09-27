@@ -308,8 +308,10 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val appDb = AppDatabase.getDatabase(application)
+
     init {
-        val database = AppDatabase.getDatabase(application)
+        val database = appDb
         businessRepository = BusinessRepository(database.businessDao())
         gymRepository = GymRepository(database.gymDao())
         restaurantRepository = RestaurantRepository(database.restaurantDao())
@@ -342,7 +344,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
         gymMembers = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
-                gymRepository.ensureInitialGymData(biz.id)
                 gymRepository.getMembers(biz.id)
             } else {
                 flowOf(emptyList())
@@ -380,7 +381,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
         // --- Restaurant Flows ---
         restaurantTables = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
-                restaurantRepository.ensureInitialRestaurantData(biz.id)
                 restaurantRepository.getTables(biz.id)
             } else {
                 flowOf(emptyList())
@@ -453,7 +453,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
         hospitalPatients = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
-                hospitalRepository.ensureInitialHospitalData(biz.id)
                 hospitalRepository.getPatients(biz.id)
             } else {
                 flowOf(emptyList())
@@ -526,7 +525,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
         pharmacyMedicines = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
-                pharmacyRepository.seedSampleMedicinesIfEmpty(biz.id)
                 pharmacyRepository.getMedicines(biz.id)
             } else {
                 flowOf(emptyList())
@@ -551,7 +549,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
         schoolStudents = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
-                schoolRepository.seedSampleSchoolDataIfEmpty(biz.id)
                 schoolRepository.getStudents(biz.id)
             } else {
                 flowOf(emptyList())
@@ -605,7 +602,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
         realEstateProperties = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
-                realEstateRepository.seedSampleRealEstateDataIfEmpty(biz.id)
                 realEstateRepository.getProperties(biz.id)
             } else {
                 flowOf(emptyList())
@@ -642,7 +638,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
         salonServices = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
-                salonRepository.seedSampleSalonDataIfEmpty(biz.id)
                 salonRepository.getServices(biz.id)
             } else {
                 flowOf(emptyList())
@@ -679,7 +674,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
         hotelRooms = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
-                hotelRepository.seedSampleHotelDataIfEmpty(biz.id)
                 hotelRepository.getRooms(biz.id)
             } else {
                 flowOf(emptyList())
@@ -716,7 +710,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
         tailorCustomers = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
-                tailorRepository.seedSampleTailorDataIfEmpty(biz.id)
                 tailorRepository.getCustomers(biz.id)
             } else {
                 flowOf(emptyList())
@@ -753,7 +746,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
         bakeryItems = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
-                bakeryRepository.seedSampleBakeryDataIfEmpty(biz.id)
                 bakeryRepository.getItems(biz.id)
             } else {
                 flowOf(emptyList())
@@ -778,7 +770,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
         electronicsProducts = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
-                electronicsRepository.seedSampleElectronicsDataIfEmpty(biz.id)
                 electronicsRepository.getProducts(biz.id)
             } else {
                 flowOf(emptyList())
@@ -803,7 +794,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
         workshopVehicles = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
-                workshopRepository.seedSampleWorkshopDataIfEmpty(biz.id)
                 workshopRepository.getVehicles(biz.id)
             } else {
                 flowOf(emptyList())
@@ -840,7 +830,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
         laundryCustomers = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
-                laundryRepository.seedSampleLaundryDataIfEmpty(biz.id)
                 laundryRepository.getCustomers(biz.id)
             } else {
                 flowOf(emptyList())
@@ -865,7 +854,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
         wholesaleParties = activeBusiness.flatMapLatest { biz ->
             if (biz != null) {
-                wholesaleRepository.seedSampleWholesaleDataIfEmpty(biz.id)
                 wholesaleRepository.getParties(biz.id)
             } else {
                 flowOf(emptyList())
@@ -998,8 +986,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
                 setAsActive = true
             )
             if (newId > 0) {
-                gymRepository.ensureInitialGymData(newId)
-                restaurantRepository.ensureInitialRestaurantData(newId)
                 _currentScreen.value = Screen.MAIN_APP
                 onSuccess()
             }
@@ -1009,8 +995,6 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
     fun switchActiveBusiness(id: Long) {
         viewModelScope.launch {
             businessRepository.switchActiveBusiness(id)
-            gymRepository.ensureInitialGymData(id)
-            restaurantRepository.ensureInitialRestaurantData(id)
             _selectedMemberId.value = null
             _selectedRestaurantTableId.value = null
         }
@@ -1029,6 +1013,39 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
             if (count == 0) {
                 _currentScreen.value = Screen.BUSINESS_SETUP
             }
+        }
+    }
+
+    fun clearAllDemoData(businessId: Long, onCleared: () -> Unit = {}) {
+        viewModelScope.launch {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                val db = appDb.openHelper.writableDatabase
+                val tables = listOf(
+                    "gym_members", "gym_checkins",
+                    "restaurant_tables", "restaurant_menu_items", "restaurant_orders", "restaurant_order_items",
+                    "patients", "doctors", "appointments", "prescriptions",
+                    "pharmacy_medicines", "pharmacy_sales",
+                    "school_students", "school_classes", "school_fee_vouchers", "student_attendance",
+                    "real_estate_properties", "real_estate_leads", "real_estate_site_visits",
+                    "salon_services", "salon_stylists", "salon_appointments",
+                    "hotel_rooms", "hotel_bookings", "hotel_guests",
+                    "tailor_customers", "tailor_measurements", "tailor_orders",
+                    "bakery_items", "bakery_cake_orders",
+                    "electronics_products", "electronics_repair_tickets",
+                    "auto_workshop_vehicles", "auto_workshop_mechanics", "auto_workshop_job_cards",
+                    "laundry_customers", "laundry_orders",
+                    "wholesale_parties", "wholesale_bulk_orders", "wholesale_payments",
+                    "expenses", "staff_members", "staff_attendance"
+                )
+                for (table in tables) {
+                    try {
+                        db.execSQL("DELETE FROM $table WHERE businessId = $businessId")
+                    } catch (_: Exception) {
+                    }
+                }
+            }
+            businessRepository.switchActiveBusiness(businessId)
+            onCleared()
         }
     }
 

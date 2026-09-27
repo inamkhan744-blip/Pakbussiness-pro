@@ -84,6 +84,7 @@ class SalonRepository(private val salonDao: SalonDao) {
 
     // --- Initial Sample Data Seeding ---
     suspend fun seedSampleSalonDataIfEmpty(businessId: Long) {
+        return // Disabled: do not seed fake salon entries
         val servicesCount = salonDao.getServicesCount(businessId)
         if (servicesCount > 0) return
 

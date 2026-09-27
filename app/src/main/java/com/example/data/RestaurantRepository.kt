@@ -212,6 +212,7 @@ class RestaurantRepository(private val restaurantDao: RestaurantDao) {
     // --- Seed Data Generator ---
 
     suspend fun ensureInitialRestaurantData(businessId: Long) {
+        return // Disabled: do not seed fake restaurant tables or menu items
         val tableCount = restaurantDao.getTableCount(businessId)
         if (tableCount == 0) {
             val initialTables = listOf(

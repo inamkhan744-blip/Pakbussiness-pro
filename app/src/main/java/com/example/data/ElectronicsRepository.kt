@@ -59,6 +59,7 @@ class ElectronicsRepository(private val electronicsDao: ElectronicsDao) {
         electronicsDao.updateRepairTicketPayment(ticketId, advance, balance)
 
     suspend fun seedSampleElectronicsDataIfEmpty(businessId: Long) {
+        return // Disabled: do not seed fake electronics entries
         val existingProductsCount = electronicsDao.getProductCount(businessId)
         val existingTicketsCount = electronicsDao.getRepairTicketCount(businessId)
         if (existingProductsCount > 0 && existingTicketsCount > 0) return

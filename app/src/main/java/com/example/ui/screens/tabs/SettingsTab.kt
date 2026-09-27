@@ -116,6 +116,9 @@ fun SettingsTab(
     var secPasswordInput by remember { mutableStateOf("") }
     var secSavedMessage by remember { mutableStateOf("") }
 
+    var showClearDataDialog by remember { mutableStateOf(false) }
+    var dataClearedSuccessMsg by remember { mutableStateOf("") }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -567,6 +570,75 @@ fun SettingsTab(
             }
         }
 
+        // Section: Data Management & Cleanup (Permanent Fake Data Removal)
+        item {
+            Text(
+                text = "Data Management & Cleanup (فیک / ڈیمو ڈیٹا ختم کریں)",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        item {
+            Card(
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f)
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Wipe All Demo & Sample Data",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Text(
+                                "Permanently delete all sample/preloaded records (patients, gym members, tables, menu, school students, vouchers, properties, salon appointments, workshop job cards, etc.) for this business. Once cleared, they will NEVER return.",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    if (dataClearedSuccessMsg.isNotEmpty()) {
+                        Text(
+                            text = dataClearedSuccessMsg,
+                            color = PakEmeraldPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
+
+                    Button(
+                        onClick = { showClearDataDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Clear All Fake Records Now (تمام فیک ڈیٹا ڈیلیٹ کریں)")
+                    }
+                }
+            }
+        }
+
         // About Footer
         item {
             Column(
@@ -707,6 +779,48 @@ fun SettingsTab(
                     colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary)
                 ) {
                     Text("Close")
+                }
+            }
+        )
+    }
+
+    // Confirmation Dialog to Clear Fake / Demo Data
+    if (showClearDataDialog && activeBusiness != null) {
+        AlertDialog(
+            onDismissRequest = { showClearDataDialog = false },
+            icon = {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text("Delete All Fake Entries?", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text(
+                    "Are you sure you want to permanently clear all sample/demo data for '${activeBusiness.name}'? " +
+                    "This will remove preloaded test items and reset tables cleanly. Once deleted, they will never reappear."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showClearDataDialog = false
+                        viewModel?.clearAllDemoData(activeBusiness.id) {
+                            dataClearedSuccessMsg = "All fake / demo records removed permanently!"
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Yes, Delete All")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showClearDataDialog = false }) {
+                    Text("Cancel")
                 }
             }
         )

@@ -113,6 +113,7 @@ class PharmacyRepository(private val pharmacyDao: PharmacyDao) {
     }
 
     suspend fun seedSampleMedicinesIfEmpty(businessId: Long) {
+        return // Disabled: do not seed fake medicines
         withContext(Dispatchers.IO) {
             val count = pharmacyDao.getMedicineCount(businessId)
             if (count > 0) return@withContext

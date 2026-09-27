@@ -124,6 +124,7 @@ class HospitalRepository(private val hospitalDao: HospitalDao) {
     // --- Seed Demo Data ---
 
     suspend fun ensureInitialHospitalData(businessId: Long) {
+        return // Disabled: do not seed fake hospital entries
         val doctorCount = hospitalDao.getDoctorCount(businessId)
         if (doctorCount == 0) {
             val initialDoctors = listOf(

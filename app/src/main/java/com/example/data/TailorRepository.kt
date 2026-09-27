@@ -59,6 +59,7 @@ class TailorRepository(private val tailorDao: TailorDao) {
         tailorDao.updateOrderPayment(orderId, advance, balance)
 
     suspend fun seedSampleTailorDataIfEmpty(businessId: Long) {
+        return // Disabled: do not seed fake tailor entries
         val existingOrdersCount = tailorDao.getOrderCount(businessId)
         if (existingOrdersCount > 0) return
 

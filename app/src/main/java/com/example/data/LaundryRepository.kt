@@ -55,6 +55,7 @@ class LaundryRepository(private val laundryDao: LaundryDao) {
         laundryDao.updateOrderPayment(orderId, additionalPayment, newBalance, paymentStatus)
 
     suspend fun seedSampleLaundryDataIfEmpty(businessId: Long) {
+        return // Disabled: do not seed fake laundry entries
         val count = laundryDao.getCustomerCount(businessId)
         if (count == 0) {
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())

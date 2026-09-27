@@ -79,6 +79,7 @@ class RealEstateRepository(private val realEstateDao: RealEstateDao) {
         realEstateDao.deleteSiteVisit(id)
 
     suspend fun seedSampleRealEstateDataIfEmpty(businessId: Long) {
+        return // Disabled: do not seed fake real estate entries
         withContext(Dispatchers.IO) {
             val count = realEstateDao.getPropertiesCount(businessId)
             if (count > 0) return@withContext

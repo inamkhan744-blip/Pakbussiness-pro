@@ -22,6 +22,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Remove
@@ -149,10 +150,8 @@ fun InventoryTab(
     var showAddDialog by remember { mutableStateOf(false) }
     var filterLowStockOnly by remember { mutableStateOf(false) }
 
-    val itemsList = remember(business?.type) {
-        mutableStateListOf<InventoryItem>().apply {
-            addAll(getInitialInventoryForBusiness(business?.type))
-        }
+    val itemsList = remember(business?.id) {
+        mutableStateListOf<InventoryItem>()
     }
 
     var newName by remember { mutableStateOf("") }
@@ -280,6 +279,26 @@ fun InventoryTab(
             }
 
             // Stock Items
+            if (filteredList.isEmpty()) {
+                item {
+                    Card(
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Default.Inventory2, contentDescription = null, tint = PakEmeraldPrimary, modifier = Modifier.size(40.dp))
+                            Text("No Inventory Items Yet", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text("Your stock list is clean. Tap the '+' button below to add your real products.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+
             items(filteredList) { item ->
                 val isLow = item.quantity <= item.minThreshold
                 val marginPct = if (item.costPrice > 0) {
@@ -412,6 +431,18 @@ fun InventoryTab(
                                         .padding(horizontal = 6.dp, vertical = 4.dp)
                                 ) {
                                     Text("+10 In", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PakEmeraldPrimary)
+                                }
+
+                                IconButton(
+                                    onClick = { itemsList.remove(item) },
+                                    modifier = Modifier.size(30.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete Item",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                 }
                             }
                         }

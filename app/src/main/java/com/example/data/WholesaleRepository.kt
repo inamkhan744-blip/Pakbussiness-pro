@@ -82,6 +82,7 @@ class WholesaleRepository(private val dao: WholesaleDao) {
 
     // --- Seed sample data if empty ---
     suspend fun seedSampleWholesaleDataIfEmpty(businessId: Long) {
+        return // Disabled: do not seed fake wholesale entries
         val sampleParties = listOf(
             WholesalePartyEntity(
                 businessId = businessId,

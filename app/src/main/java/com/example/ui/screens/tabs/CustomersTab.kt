@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
@@ -89,13 +90,8 @@ fun CustomersTab(
     var customerToPay by remember { mutableStateOf<CustomerItem?>(null) }
     var paymentAmountInput by remember { mutableStateOf("") }
 
-    val customersList = remember {
-        mutableStateListOf(
-            CustomerItem("1", "Muhammad Rizwan", "+92 321 9876543", 0.0),
-            CustomerItem("2", "Chaudhry Bilal", "+92 300 4567890", 2450.0),
-            CustomerItem("3", "Kashif Ali & Co.", "+92 333 1122334", 11200.0),
-            CustomerItem("4", "Tariq Mehmood Traders", "+92 345 5566778", 5800.0)
-        )
+    val customersList = remember(business?.id) {
+        mutableStateListOf<CustomerItem>()
     }
 
     var newCustomerName by remember { mutableStateOf("") }
@@ -210,6 +206,26 @@ fun CustomersTab(
             }
 
             // Customer List
+            if (filteredList.isEmpty()) {
+                item {
+                    Card(
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Default.Person, contentDescription = null, tint = PakEmeraldPrimary, modifier = Modifier.size(40.dp))
+                            Text("No Customers / Khata Records Yet", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text("Your customer list is clean. Tap '+' below to add your genuine customers.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+
             items(filteredList) { customer ->
                 Card(
                     shape = RoundedCornerShape(14.dp),
@@ -318,6 +334,18 @@ fun CustomersTab(
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text("Receive", fontSize = 11.sp)
                                 }
+                            }
+
+                            IconButton(
+                                onClick = { customersList.remove(customer) },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Delete Customer",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(16.dp)
+                                )
                             }
                         }
                     }

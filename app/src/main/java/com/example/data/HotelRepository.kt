@@ -106,6 +106,7 @@ class HotelRepository(private val hotelDao: HotelDao) {
     }
 
     suspend fun seedSampleHotelDataIfEmpty(businessId: Long) {
+        return // Disabled: do not seed fake hotel entries
         val roomCount = hotelDao.getRoomCount(businessId)
         if (roomCount > 0) return
 
