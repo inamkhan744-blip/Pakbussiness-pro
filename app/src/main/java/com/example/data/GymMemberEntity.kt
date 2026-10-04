@@ -35,6 +35,7 @@ data class GymMemberEntity(
     val remainingDays: Long
         get() {
             val diff = expiryDate - System.currentTimeMillis()
-            return if (diff > 0) (diff / (24L * 60L * 60L * 1000L)) + 1 else 0L
+            val dayMillis = 24L * 60L * 60L * 1000L
+            return if (diff > 0) (diff + dayMillis - 1L) / dayMillis else 0L
         }
 }

@@ -69,6 +69,12 @@ import com.example.data.ExpenseRepository
 import com.example.data.StaffEntity
 import com.example.data.StaffAttendanceEntity
 import com.example.data.StaffRepository
+import com.example.data.CoreBusinessRepository
+import com.example.data.PartyEntity
+import com.example.data.InventoryItemEntity
+import com.example.data.OrderEntity
+import com.example.data.OrderItemEntity
+import com.example.data.OrderWithItems
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -80,6 +86,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -134,6 +141,7 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
     private val wholesaleRepository: WholesaleRepository
     private val expenseRepository: ExpenseRepository
     private val staffRepository: StaffRepository
+    val coreBusinessRepository: CoreBusinessRepository
 
     val businesses: StateFlow<List<BusinessEntity>>
     val activeBusiness: StateFlow<BusinessEntity?>
@@ -236,6 +244,12 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
     val staffMembers: StateFlow<List<StaffEntity>>
     val staffAttendanceRecords: StateFlow<List<StaffAttendanceEntity>>
 
+    // --- Core Multi-Tenant Business State (Parties, Inventory, Orders) ---
+    val parties: StateFlow<List<PartyEntity>>
+    val inventoryItems: StateFlow<List<InventoryItemEntity>>
+    val orders: StateFlow<List<OrderEntity>>
+    val totalSalesAmount: StateFlow<Double>
+
     private val _currentScreen = MutableStateFlow(Screen.SPLASH)
     val currentScreen: StateFlow<Screen> = _currentScreen.asStateFlow()
 
@@ -329,6 +343,11 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
         wholesaleRepository = WholesaleRepository(database.wholesaleDao())
         expenseRepository = ExpenseRepository(database.expenseDao())
         staffRepository = StaffRepository(database.staffDao())
+        coreBusinessRepository = CoreBusinessRepository(
+            partyDao = database.partyDao(),
+            inventoryItemDao = database.inventoryItemDao(),
+            orderDao = database.orderDao()
+        )
 
         businesses = businessRepository.allBusinesses.stateIn(
             scope = viewModelScope,
@@ -925,6 +944,55 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
             initialValue = emptyList()
         )
 
+        // --- Core Multi-Tenant Flows ---
+        parties = activeBusiness.flatMapLatest { biz ->
+            if (biz != null) {
+                coreBusinessRepository.getParties(biz.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+        inventoryItems = activeBusiness.flatMapLatest { biz ->
+            if (biz != null) {
+                coreBusinessRepository.getInventoryItems(biz.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+        orders = activeBusiness.flatMapLatest { biz ->
+            if (biz != null) {
+                coreBusinessRepository.getOrders(biz.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+        totalSalesAmount = activeBusiness.flatMapLatest { biz ->
+            if (biz != null) {
+                coreBusinessRepository.getTotalSalesAmount(biz.id)
+            } else {
+                flowOf(0.0)
+            }
+        }.map { it ?: 0.0 }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0.0
+        )
+
         checkInitialState()
     }
 
@@ -1021,7 +1089,7 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 val db = appDb.openHelper.writableDatabase
                 val tables = listOf(
-                    "gym_members", "gym_checkins",
+                    "gym_members", "gym_checkins", "memberships",
                     "restaurant_tables", "restaurant_menu_items", "restaurant_orders", "restaurant_order_items",
                     "patients", "doctors", "appointments", "prescriptions",
                     "pharmacy_medicines", "pharmacy_sales",
@@ -1035,7 +1103,8 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
                     "auto_workshop_vehicles", "auto_workshop_mechanics", "auto_workshop_job_cards",
                     "laundry_customers", "laundry_orders",
                     "wholesale_parties", "wholesale_bulk_orders", "wholesale_payments",
-                    "expenses", "staff_members", "staff_attendance"
+                    "expenses", "staff_members", "staff_attendance",
+                    "parties", "inventory_items", "orders", "order_items"
                 )
                 for (table in tables) {
                     try {
@@ -2169,6 +2238,71 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
                     notes = notes
                 )
             )
+        }
+    }
+
+    // --- Core Multi-Tenant Operations (Parties, Inventory, Orders) ---
+
+    fun insertParty(party: PartyEntity, onComplete: (Long) -> Unit = {}) {
+        viewModelScope.launch {
+            val id = coreBusinessRepository.insertParty(party)
+            onComplete(id)
+        }
+    }
+
+    fun updateParty(party: PartyEntity) {
+        viewModelScope.launch {
+            coreBusinessRepository.updateParty(party)
+        }
+    }
+
+    fun deleteParty(id: Long) {
+        viewModelScope.launch {
+            coreBusinessRepository.deleteParty(id)
+        }
+    }
+
+    fun updatePartyBalance(partyId: Long, delta: Double) {
+        viewModelScope.launch {
+            coreBusinessRepository.updatePartyBalance(partyId, delta)
+        }
+    }
+
+    fun insertInventoryItem(item: InventoryItemEntity, onComplete: (Long) -> Unit = {}) {
+        viewModelScope.launch {
+            val id = coreBusinessRepository.insertInventoryItem(item)
+            onComplete(id)
+        }
+    }
+
+    fun updateInventoryItem(item: InventoryItemEntity) {
+        viewModelScope.launch {
+            coreBusinessRepository.updateInventoryItem(item)
+        }
+    }
+
+    fun deleteInventoryItem(id: Long) {
+        viewModelScope.launch {
+            coreBusinessRepository.deleteInventoryItem(id)
+        }
+    }
+
+    fun updateInventoryStock(itemId: Long, delta: Double) {
+        viewModelScope.launch {
+            coreBusinessRepository.updateInventoryStock(itemId, delta)
+        }
+    }
+
+    fun createOrder(order: OrderEntity, items: List<OrderItemEntity>, onComplete: (Long) -> Unit = {}) {
+        viewModelScope.launch {
+            val id = coreBusinessRepository.createOrderWithItems(order, items)
+            onComplete(id)
+        }
+    }
+
+    fun deleteOrder(id: Long) {
+        viewModelScope.launch {
+            coreBusinessRepository.deleteOrder(id)
         }
     }
 

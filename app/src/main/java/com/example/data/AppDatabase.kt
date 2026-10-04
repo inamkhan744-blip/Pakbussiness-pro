@@ -50,16 +50,25 @@ import androidx.room.RoomDatabase
         WholesalePaymentEntity::class,
         ExpenseEntity::class,
         StaffEntity::class,
-        StaffAttendanceEntity::class
+        StaffAttendanceEntity::class,
+        PartyEntity::class,
+        InventoryItemEntity::class,
+        OrderEntity::class,
+        OrderItemEntity::class,
+        MembershipEntity::class
     ],
-    version = 17,
+    version = 20,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun businessDao(): BusinessDao
     abstract fun gymDao(): GymDao
+    abstract fun membershipDao(): MembershipDao
     abstract fun restaurantDao(): RestaurantDao
     abstract fun hospitalDao(): HospitalDao
+    abstract fun patientDao(): PatientDao
+    abstract fun doctorDao(): DoctorDao
+    abstract fun appointmentDao(): AppointmentDao
     abstract fun pharmacyDao(): PharmacyDao
     abstract fun schoolDao(): SchoolDao
     abstract fun realEstateDao(): RealEstateDao
@@ -73,6 +82,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun wholesaleDao(): WholesaleDao
     abstract fun expenseDao(): ExpenseDao
     abstract fun staffDao(): StaffDao
+    abstract fun partyDao(): PartyDao
+    abstract fun inventoryItemDao(): InventoryItemDao
+    abstract fun orderDao(): OrderDao
 
     companion object {
         @Volatile
