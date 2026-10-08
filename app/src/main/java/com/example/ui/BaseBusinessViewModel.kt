@@ -15,9 +15,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/**
- * Base UI state encapsulation for business entity views.
- */
 sealed interface EntityUiState<out T> {
     data object Loading : EntityUiState<Nothing>
     data class Success<T>(val data: T) : EntityUiState<T>
@@ -25,10 +22,6 @@ sealed interface EntityUiState<out T> {
     data class Error(val message: String) : EntityUiState<Nothing>
 }
 
-/**
- * Abstract Base ViewModel providing multi-tenant isolation, shared database access,
- * and error/loading StateFlow management for business entity ViewModels.
- */
 abstract class BaseBusinessViewModel(application: Application) : AndroidViewModel(application) {
 
     protected val database: AppDatabase = AppDatabase.getDatabase(application)

@@ -24,14 +24,14 @@ data class PrescriptionEntity(
     val id: Long = 0,
     val businessId: Long,
     val appointmentId: Long? = null,
-    val patientId: Long,
-    val patientName: String,
-    val patientAge: Int,
-    val patientGender: String,
-    val patientPhone: String,
-    val doctorId: Long,
-    val doctorName: String,
-    val doctorSpecialization: String,
+    val patientId: Long = 0,
+    val patientName: String = "",
+    val patientAge: Int = 0,
+    val patientGender: String = "",
+    val patientPhone: String = "",
+    val doctorId: Long = 0,
+    val doctorName: String = "",
+    val doctorSpecialization: String = "",
     val vitalsBp: String = "", // e.g. "120/80"
     val vitalsPulse: String = "", // e.g. "72 bpm"
     val vitalsTemp: String = "", // e.g. "98.6 °F"
@@ -42,8 +42,15 @@ data class PrescriptionEntity(
     val labTests: String = "",
     val advice: String = "",
     val followUpDays: Int = 7,
+    val bp: String = "",
+    val pulse: String = "",
+    val temp: String = "",
+    val weight: String = "",
+    val medicinesRaw: String = "",
+    val consultationFeePkr: Double = 0.0,
     val createdAt: Long = System.currentTimeMillis()
 ) {
+    val rxNumber: String get() = "RX-$id"
     fun parseMedicines(): List<PrescriptionMedicineItem> {
         return try {
             val array = JSONArray(medicinesJson)

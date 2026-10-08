@@ -15,14 +15,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
-/**
- * ViewModel for managing 'Parties' (Customers, Suppliers, Vendors, Ledger Accounts).
- * Provides reactive StateFlow streams for UI consumption.
- */
 @OptIn(ExperimentalCoroutinesApi::class)
 class PartiesViewModel(
     application: Application,
@@ -32,120 +26,59 @@ class PartiesViewModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _selectedPartyType = MutableStateFlow<String?>("ALL") // ALL, CUSTOMER, SUPPLIER
-    val selectedPartyType: StateFlow<String?> = _selectedPartyType.asStateFlow()
+    private val _partyTypeFilter = MutableStateFlow("ALL") // ALL, CUSTOMER, SUPPLIER
+    val partyTypeFilter: StateFlow<String> = _partyTypeFilter.asStateFlow()
 
-    private val _selectedParty = MutableStateFlow<PartyEntity?>(null)
-    val selectedParty: StateFlow<PartyEntity?> = _selectedParty.asStateFlow()
-
-    // Raw stream of parties for active business
-    val rawParties: StateFlow<List<PartyEntity>> = activeBusiness.flatMapLatest { biz ->
+    val parties: StateFlow<List<PartyEntity>> = activeBusiness.flatMapLatest { biz ->
         if (biz != null) partyDao.getParties(biz.id) else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Filtered parties by query and type
-    val parties: StateFlow<List<PartyEntity>> = combine(
-        rawParties,
+    val filteredParties: StateFlow<List<PartyEntity>> = combine(
+        parties,
         searchQuery,
-        selectedPartyType
-    ) { list, query, type ->
-        list.filter { party ->
-            val matchesQuery = query.isBlank() ||
-                party.name.contains(query, ignoreCase = true) ||
-                party.phone.contains(query, ignoreCase = true) ||
-                party.city.contains(query, ignoreCase = true)
-
-            val matchesType = type == null || type == "ALL" ||
-                party.partyType.equals(type, ignoreCase = true)
-
+        partyTypeFilter
+    ) { list, q, type ->
+        list.filter {
+            val matchesQuery = q.isBlank() || it.name.contains(q, ignoreCase = true) || it.phone.contains(q, ignoreCase = true)
+            val matchesType = type == "ALL" || it.partyType == type
             matchesQuery && matchesType
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    // UI state for parties screen
-    val partiesUiState: StateFlow<EntityUiState<List<PartyEntity>>> = combine(
-        parties,
-        isLoading
-    ) { list, loading ->
-        when {
-            loading && list.isEmpty() -> EntityUiState.Loading
-            list.isEmpty() -> EntityUiState.Empty
-            else -> EntityUiState.Success(list)
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), EntityUiState.Loading)
-
-    // Khata ledger totals: receivables (positive) and payables (negative)
-    val totalReceivables: StateFlow<Double> = rawParties.map { list ->
-        list.filter { it.currentBalance > 0 }.sumOf { it.currentBalance }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
-
-    val totalPayables: StateFlow<Double> = rawParties.map { list ->
-        list.filter { it.currentBalance < 0 }.sumOf { -it.currentBalance }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
     }
 
-    fun setPartyTypeFilter(type: String?) {
-        _selectedPartyType.value = type
-    }
-
-    fun selectParty(party: PartyEntity?) {
-        _selectedParty.value = party
+    fun setPartyTypeFilter(type: String) {
+        _partyTypeFilter.value = type
     }
 
     fun saveParty(
         id: Long = 0L,
         name: String,
         phone: String,
-        partyType: String = "CUSTOMER",
-        email: String = "",
-        address: String = "",
+        type: String,
         city: String = "",
-        openingBalance: Double = 0.0,
-        creditLimit: Double = 0.0,
-        notes: String = "",
-        onComplete: (Long) -> Unit = {}
+        initialBalance: Double = 0.0
     ) {
         val bizId = activeBusiness.value?.id ?: return
         launchWithLoading {
-            val party = PartyEntity(
+            val entity = PartyEntity(
                 id = id,
                 businessId = bizId,
                 name = name.trim(),
                 phone = phone.trim(),
-                partyType = partyType.trim(),
-                email = email.trim(),
-                address = address.trim(),
+                partyType = type,
                 city = city.trim(),
-                currentBalance = openingBalance,
-                creditLimit = creditLimit,
-                notes = notes.trim(),
-                updatedAt = System.currentTimeMillis()
+                currentBalance = initialBalance
             )
-            val generatedId = if (id == 0L) {
-                partyDao.insertParty(party)
-            } else {
-                partyDao.updateParty(party)
-                id
-            }
-            onComplete(generatedId)
+            if (id == 0L) partyDao.insertParty(entity) else partyDao.updateParty(entity)
         }
     }
 
-    fun updatePartyBalance(partyId: Long, delta: Double) {
+    fun updateBalance(id: Long, delta: Double) {
         launchWithLoading {
-            partyDao.updatePartyBalance(partyId, delta)
-        }
-    }
-
-    fun deleteParty(partyId: Long) {
-        launchWithLoading {
-            partyDao.deleteParty(partyId)
-            if (_selectedParty.value?.id == partyId) {
-                _selectedParty.value = null
-            }
+            partyDao.updatePartyBalance(id, delta)
         }
     }
 
@@ -159,5 +92,3 @@ class PartiesViewModel(
             }
     }
 }
-
-typealias PartyViewModel = PartiesViewModel

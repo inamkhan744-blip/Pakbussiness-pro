@@ -138,6 +138,26 @@ class SchoolRepository(private val schoolDao: SchoolDao) {
         schoolDao.insertAttendanceList(records)
     }
 
+    // --- Staff & Teachers ---
+    fun getStaff(businessId: Long): Flow<List<SchoolStaffEntity>> =
+        schoolDao.getStaff(businessId)
+
+    suspend fun saveStaff(staff: SchoolStaffEntity): Long =
+        schoolDao.insertStaff(staff)
+
+    suspend fun deleteStaff(id: Long) =
+        schoolDao.deleteStaff(id)
+
+    // --- Exam Results ---
+    fun getExamResults(businessId: Long): Flow<List<ExamResultEntity>> =
+        schoolDao.getExamResults(businessId)
+
+    suspend fun saveExamResult(result: ExamResultEntity): Long =
+        schoolDao.insertExamResult(result)
+
+    suspend fun deleteExamResult(id: Long) =
+        schoolDao.deleteExamResult(id)
+
     suspend fun seedSampleSchoolDataIfEmpty(businessId: Long) {
         return // Disabled: do not seed fake school entries
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {

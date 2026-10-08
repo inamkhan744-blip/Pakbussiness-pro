@@ -33,12 +33,17 @@ import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PointOfSale
+import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
+import com.example.util.InvoiceExportData
+import com.example.util.InvoiceExportItem
+import com.example.util.PdfExportUtil
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -195,6 +200,7 @@ fun PosTab(
     var showBarcodeScannerDialog by remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf(false) }
     var lastReceiptText by remember { mutableStateOf("") }
+    var lastInvoiceExportData by remember { mutableStateOf<InvoiceExportData?>(null) }
 
     var customerName by remember { mutableStateOf("") }
     var customerPhone by remember { mutableStateOf("") }
@@ -722,6 +728,34 @@ fun PosTab(
                                 100% Offline POS by PakBusiness Pro.
                             """.trimIndent()
 
+                            val exportItems = cart.entries.mapNotNull { entry ->
+                                val item = catalog.find { it.id == entry.key }
+                                item?.let {
+                                    InvoiceExportItem(
+                                        name = it.name,
+                                        quantity = entry.value.toDouble(),
+                                        unitPrice = it.price,
+                                        total = entry.value * it.price
+                                    )
+                                }
+                            }
+
+                            lastInvoiceExportData = InvoiceExportData(
+                                invoiceNumber = "INV-${System.currentTimeMillis() % 100000}",
+                                date = timeStr,
+                                businessName = business?.name ?: "PakBusiness Store",
+                                businessAddress = business?.address ?: "",
+                                businessPhone = business?.phone ?: "",
+                                customerName = if (customerName.isNotBlank()) customerName else "Walk-in Customer",
+                                customerPhone = customerPhone,
+                                items = exportItems,
+                                subtotal = subtotalAmount,
+                                discount = discountAmount,
+                                tax = taxAmount,
+                                grandTotal = netTotalAmount,
+                                paymentMethod = selectedPaymentMode
+                            )
+
                             cart.clear()
                             customerName = ""
                             customerPhone = ""
@@ -919,15 +953,55 @@ fun PosTab(
                     }
                 },
                 confirmButton = {
-                    Button(
-                        onClick = {
-                            shareReceiptViaWhatsApp(lastReceiptText)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Share via WhatsApp / Slip", color = Color.White)
+                        Button(
+                            onClick = {
+                                shareReceiptViaWhatsApp(lastReceiptText)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                            modifier = Modifier.fillMaxWidth().testTag("btn_share_whatsapp_receipt")
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Share via WhatsApp", color = Color.White)
+                        }
+
+                        if (lastInvoiceExportData != null) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        lastInvoiceExportData?.let {
+                                            PdfExportUtil.printInvoice(context, it)
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f).testTag("btn_print_pdf_invoice")
+                                ) {
+                                    Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Print", fontSize = 12.sp)
+                                }
+
+                                Button(
+                                    onClick = {
+                                        lastInvoiceExportData?.let {
+                                            PdfExportUtil.shareInvoice(context, it)
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
+                                    modifier = Modifier.weight(1f).testTag("btn_share_pdf_invoice")
+                                ) {
+                                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("PDF Invoice", fontSize = 12.sp)
+                                }
+                            }
+                        }
                     }
                 },
                 dismissButton = {

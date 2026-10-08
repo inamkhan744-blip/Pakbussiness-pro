@@ -25,9 +25,11 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -89,7 +91,22 @@ fun GymAddEditMemberScreen(
     memberToEdit: GymMemberEntity?,
     onSave: (name: String, phone: String, gender: String, plan: String, startDate: Long, durationDays: Int, amount: Double) -> Unit,
     onCancel: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSaveFull: ((
+        name: String,
+        phone: String,
+        gender: String,
+        plan: String,
+        startDate: Long,
+        durationDays: Int,
+        amount: Double,
+        admissionFee: Double,
+        pendingDue: Double,
+        fitnessGoal: String,
+        workoutPlan: String,
+        dietPlan: String,
+        lockerNumber: String
+    ) -> Unit)? = null
 ) {
     val isEditMode = memberToEdit != null
 
@@ -104,6 +121,14 @@ fun GymAddEditMemberScreen(
             memberToEdit?.amountPkr?.let { "%.0f".format(it) } ?: "3500"
         )
     }
+
+    // Advanced Fitness & Facility Fields
+    var lockerNumber by remember { mutableStateOf(memberToEdit?.lockerNumber ?: "") }
+    var admissionFeeText by remember { mutableStateOf(memberToEdit?.let { "%.0f".format(it.admissionFeePkr) } ?: "0") }
+    var pendingDueText by remember { mutableStateOf(memberToEdit?.let { "%.0f".format(it.pendingDuePkr) } ?: "0") }
+    var fitnessGoal by remember { mutableStateOf(memberToEdit?.fitnessGoal ?: "Muscle Hypertrophy") }
+    var workoutPlan by remember { mutableStateOf(memberToEdit?.workoutPlan ?: "") }
+    var dietPlan by remember { mutableStateOf(memberToEdit?.dietPlan ?: "") }
 
     var nameError by remember { mutableStateOf<String?>(null) }
     var phoneError by remember { mutableStateOf<String?>(null) }
@@ -450,6 +475,116 @@ fun GymAddEditMemberScreen(
                     .testTag("gym_member_amount_input")
             )
 
+            // Section 4: Facility, Locker & Fitness Profile (Optional)
+            Text(
+                text = "4. Facility, Locker & Goals (Optional)",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Locker Number
+                OutlinedTextField(
+                    value = lockerNumber,
+                    onValueChange = { lockerNumber = it },
+                    label = { Text("Locker Number") },
+                    placeholder = { Text("e.g. L-12") },
+                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = PakEmeraldPrimary) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("gym_member_locker_input")
+                )
+
+                // Admission Fee
+                OutlinedTextField(
+                    value = admissionFeeText,
+                    onValueChange = { admissionFeeText = it },
+                    label = { Text("Admission Fee (PKR)") },
+                    placeholder = { Text("0") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("gym_member_admission_fee_input")
+                )
+            }
+
+            // Pending Dues (PKR)
+            OutlinedTextField(
+                value = pendingDueText,
+                onValueChange = { pendingDueText = it },
+                label = { Text("Pending Due / Balance (PKR)") },
+                placeholder = { Text("0") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("gym_member_due_input")
+            )
+
+            // Fitness Goal selection
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "Primary Fitness Goal",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                val goals = listOf("Muscle Hypertrophy", "Weight Loss", "Cardio / Stamina", "Strength & Power", "General Fitness")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    goals.take(3).forEach { goal ->
+                        val isSelected = fitnessGoal == goal
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { fitnessGoal = goal },
+                            label = { Text(goal, fontSize = 11.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = PakEmeraldContainer,
+                                selectedLabelColor = PakEmeraldPrimary
+                            )
+                        )
+                    }
+                }
+            }
+
+            // Workout & Diet Plan notes
+            OutlinedTextField(
+                value = workoutPlan,
+                onValueChange = { workoutPlan = it },
+                label = { Text("Workout Split / Routine Notes") },
+                placeholder = { Text("e.g. Mon: Chest, Tue: Back, Wed: Legs, Thu: Shoulders") },
+                leadingIcon = { Icon(Icons.Default.FitnessCenter, contentDescription = null, tint = PakEmeraldPrimary) },
+                maxLines = 2,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("gym_member_workout_input")
+            )
+
+            OutlinedTextField(
+                value = dietPlan,
+                onValueChange = { dietPlan = it },
+                label = { Text("Diet / Nutrition Recommendation Notes") },
+                placeholder = { Text("e.g. 150g Protein daily, 4 Eggs, Chicken breast, Oats, Whey") },
+                leadingIcon = { Icon(Icons.Default.Restaurant, contentDescription = null, tint = PakEmeraldPrimary) },
+                maxLines = 2,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("gym_member_diet_input")
+            )
+
             Spacer(modifier = Modifier.height(8.dp))
 
             // Action Buttons
@@ -479,15 +614,36 @@ fun GymAddEditMemberScreen(
 
                         if (!hasError) {
                             val amount = amountText.toDoubleOrNull() ?: 3500.0
-                            onSave(
-                                name.trim(),
-                                phone.trim(),
-                                selectedGender,
-                                selectedPlan,
-                                startDate,
-                                durationDays,
-                                amount
-                            )
+                            val admFee = admissionFeeText.toDoubleOrNull() ?: 0.0
+                            val dueAmount = pendingDueText.toDoubleOrNull() ?: 0.0
+
+                            if (onSaveFull != null) {
+                                onSaveFull(
+                                    name.trim(),
+                                    phone.trim(),
+                                    selectedGender,
+                                    selectedPlan,
+                                    startDate,
+                                    durationDays,
+                                    amount,
+                                    admFee,
+                                    dueAmount,
+                                    fitnessGoal,
+                                    workoutPlan,
+                                    dietPlan,
+                                    lockerNumber
+                                )
+                            } else {
+                                onSave(
+                                    name.trim(),
+                                    phone.trim(),
+                                    selectedGender,
+                                    selectedPlan,
+                                    startDate,
+                                    durationDays,
+                                    amount
+                                )
+                            }
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),

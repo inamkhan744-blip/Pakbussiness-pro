@@ -138,6 +138,8 @@ import com.example.data.RestaurantOrderEntity
 import com.example.data.RestaurantOrderItemEntity
 import com.example.data.RestaurantTableEntity
 import com.example.data.SchoolClassEntity
+import com.example.data.SchoolStaffEntity
+import com.example.data.ExamResultEntity
 import com.example.data.StudentAttendanceEntity
 import com.example.data.StudentEntity
 import com.example.ui.AppLanguage
@@ -412,6 +414,8 @@ fun MainAppScreen(
     schoolFeeVouchers: List<FeeVoucherEntity> = emptyList(),
     schoolAttendanceRecords: List<StudentAttendanceEntity> = emptyList(),
     selectedAttendanceDate: String = "",
+    schoolStaff: List<SchoolStaffEntity> = emptyList(),
+    schoolExamResults: List<ExamResultEntity> = emptyList(),
     onSaveStudent: (StudentEntity) -> Unit = {},
     onDeleteStudent: (Long) -> Unit = {},
     onSaveSchoolClass: (SchoolClassEntity) -> Unit = {},
@@ -423,6 +427,10 @@ fun MainAppScreen(
     onAttendanceDateChange: (String) -> Unit = {},
     onRecordAttendance: (StudentAttendanceEntity) -> Unit = {},
     onMarkAllAttendancePresent: (List<StudentEntity>, String, Long) -> Unit = { _, _, _ -> },
+    onSaveSchoolStaff: (SchoolStaffEntity) -> Unit = {},
+    onDeleteSchoolStaff: (Long) -> Unit = {},
+    onSaveSchoolExamResult: (ExamResultEntity) -> Unit = {},
+    onDeleteSchoolExamResult: (Long) -> Unit = {},
     onTabSelected: (BottomNavTab) -> Unit,
     onSwitchBusiness: (Long) -> Unit,
     onDeleteBusiness: (Long) -> Unit,
@@ -470,12 +478,8 @@ fun MainAppScreen(
         getTabsForBusiness(activeBusiness?.type)
     }
 
-    val allowedTabs = remember(bottomBarTabs) {
-        bottomBarTabs + listOf(
-            BottomNavTab.EXPENSES,
-            BottomNavTab.STAFF,
-            BottomNavTab.REPORTS
-        )
+    val allowedTabs = remember {
+        BottomNavTab.entries.toList()
     }
 
     val filteredNavItems = remember(bottomBarTabs) {
@@ -1010,6 +1014,86 @@ fun MainAppScreen(
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.padding(vertical = 2.dp)
                             )
+                        }
+
+                        // ALL OTHER SPECIALIZED INDUSTRY MODULES (15-in-1)
+                        val otherIndustryItems = remember(filteredNavItems) {
+                            NAV_ITEMS.filter { it !in filteredNavItems && it.tab !in listOf(BottomNavTab.EXPENSES, BottomNavTab.STAFF, BottomNavTab.REPORTS, BottomNavTab.SETTINGS, BottomNavTab.DASHBOARD) }
+                        }
+                        if (otherIndustryItems.isNotEmpty()) {
+                            var showAllIndustryModules by remember { mutableStateOf(false) }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showAllIndustryModules = !showAllIndustryModules }
+                                    .testTag("drawer_toggle_all_modules")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Business,
+                                            contentDescription = null,
+                                            tint = PakEmeraldPrimary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = if (showAllIndustryModules) "Hide Other Industry Modules" else "Explore All Other Modules (${otherIndustryItems.size})",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = PakEmeraldPrimary
+                                        )
+                                    }
+                                    Icon(
+                                        imageVector = if (showAllIndustryModules) Icons.Default.Close else Icons.Default.Add,
+                                        contentDescription = null,
+                                        tint = PakEmeraldPrimary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+
+                            if (showAllIndustryModules) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    otherIndustryItems.forEach { item ->
+                                        val isSelected = currentTab == item.tab
+                                        NavigationDrawerItem(
+                                            label = {
+                                                Text(item.title, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, fontSize = 13.sp)
+                                            },
+                                            selected = isSelected,
+                                            onClick = {
+                                                onTabSelected(item.tab)
+                                                scope.launch { drawerState.close() }
+                                            },
+                                            icon = {
+                                                Icon(item.selectedIcon, contentDescription = item.title, modifier = Modifier.size(20.dp))
+                                            },
+                                            colors = NavigationDrawerItemDefaults.colors(
+                                                selectedContainerColor = PakEmeraldContainer,
+                                                selectedIconColor = PakEmeraldPrimary,
+                                                selectedTextColor = PakEmeraldPrimary
+                                            ),
+                                            shape = RoundedCornerShape(10.dp),
+                                            modifier = Modifier.padding(vertical = 1.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -1647,7 +1731,13 @@ fun MainAppScreen(
                         onDeleteVoucher = onDeleteFeeVoucher,
                         onAttendanceDateChange = onAttendanceDateChange,
                         onRecordAttendance = onRecordAttendance,
-                        onMarkAllAttendancePresent = onMarkAllAttendancePresent
+                        onMarkAllAttendancePresent = onMarkAllAttendancePresent,
+                        staffList = schoolStaff,
+                        examResults = schoolExamResults,
+                        onSaveStaff = onSaveSchoolStaff,
+                        onDeleteStaff = onDeleteSchoolStaff,
+                        onSaveExamResult = onSaveSchoolExamResult,
+                        onDeleteExamResult = onDeleteSchoolExamResult
                     )
                     BottomNavTab.REAL_ESTATE -> {
                         if (viewModel != null) {
@@ -1726,7 +1816,8 @@ fun MainAppScreen(
                         onSaveMember = onSaveMember,
                         onDeleteMember = onDeleteMember,
                         onToggleCheckIn = onToggleCheckIn,
-                        getMemberCheckIns = getMemberCheckIns
+                        getMemberCheckIns = getMemberCheckIns,
+                        viewModel = viewModel
                     )
                     BottomNavTab.POS -> PosTab(
                         business = activeBusiness

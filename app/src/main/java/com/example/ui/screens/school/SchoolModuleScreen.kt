@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Class
 import androidx.compose.material.icons.filled.EventAvailable
 import androidx.compose.material.icons.filled.ReceiptLong
@@ -42,8 +44,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.BusinessEntity
+import com.example.data.ExamResultEntity
 import com.example.data.FeeVoucherEntity
 import com.example.data.SchoolClassEntity
+import com.example.data.SchoolStaffEntity
 import com.example.data.StudentAttendanceEntity
 import com.example.data.StudentEntity
 import com.example.ui.theme.PakEmeraldContainer
@@ -54,6 +58,8 @@ sealed class SchoolTab(val title: String, val icon: ImageVector) {
     object Classes : SchoolTab("Classes", Icons.Default.Class)
     object FeeVouchers : SchoolTab("Fee Vouchers", Icons.Default.ReceiptLong)
     object Attendance : SchoolTab("Attendance", Icons.Default.EventAvailable)
+    object Staff : SchoolTab("Teachers & Staff", Icons.Default.Badge)
+    object Exams : SchoolTab("Exams & Results", Icons.Default.Assessment)
 }
 
 @Composable
@@ -75,6 +81,12 @@ fun SchoolModuleScreen(
     onAttendanceDateChange: (String) -> Unit,
     onRecordAttendance: (StudentAttendanceEntity) -> Unit,
     onMarkAllAttendancePresent: (students: List<StudentEntity>, dateString: String, dateMillis: Long) -> Unit,
+    staffList: List<SchoolStaffEntity> = emptyList(),
+    examResults: List<ExamResultEntity> = emptyList(),
+    onSaveStaff: (SchoolStaffEntity) -> Unit = {},
+    onDeleteStaff: (Long) -> Unit = {},
+    onSaveExamResult: (ExamResultEntity) -> Unit = {},
+    onDeleteExamResult: (Long) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -82,7 +94,9 @@ fun SchoolModuleScreen(
         SchoolTab.Students,
         SchoolTab.Classes,
         SchoolTab.FeeVouchers,
-        SchoolTab.Attendance
+        SchoolTab.Attendance,
+        SchoolTab.Staff,
+        SchoolTab.Exams
     )
 
     Column(
@@ -234,6 +248,20 @@ fun SchoolModuleScreen(
                     onDateChange = onAttendanceDateChange,
                     onRecordAttendance = onRecordAttendance,
                     onMarkAllPresent = onMarkAllAttendancePresent
+                )
+                4 -> SchoolStaffTab(
+                    activeBusiness = activeBusiness,
+                    staffList = staffList,
+                    onSaveStaff = onSaveStaff,
+                    onDeleteStaff = onDeleteStaff
+                )
+                5 -> SchoolExamsTab(
+                    activeBusiness = activeBusiness,
+                    students = students,
+                    classes = classes,
+                    examResults = examResults,
+                    onSaveExamResult = onSaveExamResult,
+                    onDeleteExamResult = onDeleteExamResult
                 )
             }
         }

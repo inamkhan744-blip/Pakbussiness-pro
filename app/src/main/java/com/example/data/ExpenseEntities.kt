@@ -27,6 +27,9 @@ data class ExpenseEntity(
 @Dao
 interface ExpenseDao {
     @Query("SELECT * FROM expenses WHERE businessId = :businessId ORDER BY date DESC")
+    fun getExpenses(businessId: Long): Flow<List<ExpenseEntity>>
+
+    @Query("SELECT * FROM expenses WHERE businessId = :businessId ORDER BY date DESC")
     fun getExpensesForBusiness(businessId: Long): Flow<List<ExpenseEntity>>
 
     @Query("SELECT * FROM expenses WHERE businessId = :businessId AND date >= :startTime AND date <= :endTime ORDER BY date DESC")

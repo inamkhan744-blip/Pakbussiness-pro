@@ -1,5 +1,7 @@
 package com.example.ui.screens.gym
 
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,11 +28,14 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -383,6 +388,156 @@ fun GymMemberDetailsScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = PakEmeraldPrimary
                             )
+                        }
+                    }
+                }
+            }
+
+            // Facility, Locker & Fitness Profile Card
+            item {
+                val context = LocalContext.current
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    modifier = Modifier.fillMaxWidth().testTag("gym_member_fitness_card")
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(Icons.Default.FitnessCenter, contentDescription = null, tint = PakEmeraldPrimary, modifier = Modifier.size(20.dp))
+                                Text(
+                                    text = "Fitness Profile & Locker",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            if (member.lockerNumber.isNotBlank()) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = PakGoldContainer
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(Icons.Default.Lock, contentDescription = null, tint = PakGoldSecondary, modifier = Modifier.size(12.dp))
+                                        Text(
+                                            text = "Locker: ${member.lockerNumber}",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = PakGoldSecondary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                        // Stats Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("Goal", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    text = if (member.fitnessGoal.isNotBlank()) member.fitnessGoal else "General Fitness",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PakEmeraldPrimary
+                                )
+                            }
+                            Column {
+                                Text("Admission Fee", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    text = GymDateUtils.formatCurrency(member.admissionFeePkr),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("Pending Dues", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    text = GymDateUtils.formatCurrency(member.pendingDuePkr),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (member.pendingDuePkr > 0) Color(0xFFC62828) else Color(0xFF2E7D32)
+                                )
+                            }
+                        }
+
+                        // Workout Split
+                        if (member.workoutPlan.isNotBlank()) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Text("🏋 Workout Routine:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PakEmeraldDark)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(member.workoutPlan, fontSize = 12.sp)
+                                }
+                            }
+                        }
+
+                        // Diet Recommendation
+                        if (member.dietPlan.isNotBlank()) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Text("🥗 Nutrition / Diet Plan:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PakEmeraldDark)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(member.dietPlan, fontSize = 12.sp)
+                                }
+                            }
+                        }
+
+                        // WhatsApp Share Routine Button
+                        Button(
+                            onClick = {
+                                val routineText = """
+                                    🏋 *GYM WORKOUT & DIET PLAN*
+                                    👤 *Member:* ${member.name}
+                                    🎯 *Goal:* ${if (member.fitnessGoal.isNotBlank()) member.fitnessGoal else "Fitness"}
+                                    ${if (member.lockerNumber.isNotBlank()) "🔐 *Locker #:* " + member.lockerNumber else ""}
+                                    ----------------------------
+                                    ${if (member.workoutPlan.isNotBlank()) "🏋 *Workout Split:*\n" + member.workoutPlan + "\n----------------------------\n" else ""}
+                                    ${if (member.dietPlan.isNotBlank()) "🥗 *Diet / Nutrition:*\n" + member.dietPlan + "\n----------------------------\n" else ""}
+                                    Shared via PakBusiness Pro
+                                """.trimIndent()
+
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, routineText)
+                                }
+                                val chooser = Intent.createChooser(intent, "Share Routine via WhatsApp")
+                                context.startActivity(chooser)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Share Routine / Diet Card", color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

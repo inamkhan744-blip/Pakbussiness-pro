@@ -15,6 +15,13 @@ data class GymMemberEntity(
     val startDate: Long = System.currentTimeMillis(),
     val durationDays: Int = 30,
     val amountPkr: Double = 3000.0,
+    val admissionFeePkr: Double = 0.0,
+    val pendingDuePkr: Double = 0.0,
+    val fitnessGoal: String = "",
+    val workoutPlan: String = "",
+    val dietPlan: String = "",
+    val lockerNumber: String = "",
+    val assignedTrainer: String = "",
     val isCheckedIn: Boolean = false,
     val lastCheckInTime: Long? = null,
     val createdAt: Long = System.currentTimeMillis()

@@ -65,4 +65,14 @@ interface ElectronicsDao {
 
     @Query("SELECT COUNT(*) FROM electronics_repair_tickets WHERE businessId = :businessId")
     suspend fun getRepairTicketCount(businessId: Long): Int
+
+    // --- Repair Jobs ---
+    @Query("SELECT * FROM repair_jobs WHERE businessId = :businessId ORDER BY createdAt DESC")
+    fun getRepairJobs(businessId: Long): Flow<List<RepairJobEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertRepairJob(job: RepairJobEntity): Long
+
+    @Query("UPDATE repair_jobs SET status = :status WHERE id = :id")
+    suspend fun updateStatus(id: Long, status: String)
 }

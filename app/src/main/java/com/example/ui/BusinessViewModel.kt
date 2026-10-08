@@ -12,6 +12,8 @@ import com.example.data.BusinessRepository
 import com.example.data.DoctorEntity
 import com.example.data.GymCheckInEntity
 import com.example.data.GymMemberEntity
+import com.example.data.GymPaymentEntity
+import com.example.data.GymLockerEntity
 import com.example.data.GymRepository
 import com.example.data.HospitalDao
 import com.example.data.HospitalRepository
@@ -31,6 +33,8 @@ import com.example.data.SchoolRepository
 import com.example.data.StudentAttendanceEntity
 import com.example.data.StudentEntity
 import com.example.data.FeeVoucherEntity
+import com.example.data.SchoolStaffEntity
+import com.example.data.ExamResultEntity
 import com.example.data.PropertyEntity
 import com.example.data.LeadEntity
 import com.example.data.SiteVisitEntity
@@ -148,6 +152,8 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
     val gymMembers: StateFlow<List<GymMemberEntity>>
     val todayGymCheckIns: StateFlow<List<GymCheckInEntity>>
+    val gymPayments: StateFlow<List<GymPaymentEntity>>
+    val gymLockers: StateFlow<List<GymLockerEntity>>
 
     private val _selectedMemberId = MutableStateFlow<Long?>(null)
     val selectedMemberId: StateFlow<Long?> = _selectedMemberId.asStateFlow()
@@ -196,6 +202,8 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
     )
     val selectedAttendanceDate: StateFlow<String> = _selectedAttendanceDate.asStateFlow()
     val schoolAttendanceRecords: StateFlow<List<StudentAttendanceEntity>>
+    val schoolStaff: StateFlow<List<SchoolStaffEntity>>
+    val schoolExamResults: StateFlow<List<ExamResultEntity>>
 
     // --- Real Estate State ---
     val realEstateProperties: StateFlow<List<PropertyEntity>>
@@ -395,6 +403,30 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = null
+        )
+
+        gymPayments = activeBusiness.flatMapLatest { biz ->
+            if (biz != null) {
+                gymRepository.getPayments(biz.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+        gymLockers = activeBusiness.flatMapLatest { biz ->
+            if (biz != null) {
+                gymRepository.getLockers(biz.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
         )
 
         // --- Restaurant Flows ---
@@ -610,6 +642,30 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
         }.flatMapLatest { (biz, dateStr) ->
             if (biz != null) {
                 schoolRepository.getAttendanceByDate(biz.id, dateStr)
+            } else {
+                flowOf(emptyList())
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+        schoolStaff = activeBusiness.flatMapLatest { biz ->
+            if (biz != null) {
+                schoolRepository.getStaff(biz.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+        schoolExamResults = activeBusiness.flatMapLatest { biz ->
+            if (biz != null) {
+                schoolRepository.getExamResults(biz.id)
             } else {
                 flowOf(emptyList())
             }
@@ -1068,6 +1124,8 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun switchBusiness(id: Long) = switchActiveBusiness(id)
+
     fun updateBusiness(business: BusinessEntity) {
         viewModelScope.launch {
             businessRepository.updateBusiness(business)
@@ -1124,6 +1182,8 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
         _selectedMemberId.value = id
     }
 
+    fun selectMember(id: Long?) = selectGymMember(id)
+
     fun openAddMember() {
         _memberToEdit.value = null
         _isAddEditMemberOpen.value = true
@@ -1148,6 +1208,12 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
         durationDays: Int,
         amountPkr: Double,
         id: Long = 0L,
+        admissionFeePkr: Double = 0.0,
+        pendingDuePkr: Double = 0.0,
+        fitnessGoal: String = "",
+        workoutPlan: String = "",
+        dietPlan: String = "",
+        lockerNumber: String = "",
         onSuccess: () -> Unit = {}
     ) {
         val bizId = activeBusiness.value?.id ?: 0L
@@ -1163,6 +1229,12 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
                 startDate = startDate,
                 durationDays = durationDays,
                 amountPkr = amountPkr,
+                admissionFeePkr = admissionFeePkr,
+                pendingDuePkr = pendingDuePkr,
+                fitnessGoal = fitnessGoal.trim(),
+                workoutPlan = workoutPlan.trim(),
+                dietPlan = dietPlan.trim(),
+                lockerNumber = lockerNumber.trim(),
                 isCheckedIn = existing?.isCheckedIn ?: false,
                 lastCheckInTime = existing?.lastCheckInTime,
                 createdAt = existing?.createdAt ?: System.currentTimeMillis()
@@ -1195,6 +1267,49 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
 
     fun getMemberCheckIns(memberId: Long): Flow<List<GymCheckInEntity>> {
         return gymRepository.getMemberCheckIns(memberId)
+    }
+
+    fun collectGymFeePayment(
+        memberId: Long,
+        memberName: String,
+        amountPkr: Double,
+        paymentType: String = "Monthly Renewal Fee",
+        paymentMethod: String = "Cash",
+        additionalDays: Int = 30
+    ) {
+        val bizId = activeBusiness.value?.id ?: return
+        viewModelScope.launch {
+            gymRepository.recordPayment(
+                GymPaymentEntity(
+                    businessId = bizId,
+                    memberId = memberId,
+                    memberName = memberName,
+                    amountPkr = amountPkr,
+                    paymentType = paymentType,
+                    paymentMethod = paymentMethod
+                )
+            )
+            val member = gymRepository.getMemberByIdDirect(memberId)
+            if (member != null) {
+                val newDue = (member.pendingDuePkr - amountPkr).coerceAtLeast(0.0)
+                val newStart = if (member.isExpired) System.currentTimeMillis() else member.startDate
+                val newDuration = if (member.isExpired) additionalDays else member.durationDays + additionalDays
+                gymRepository.saveMember(member.copy(pendingDuePkr = newDue, startDate = newStart, durationDays = newDuration))
+            }
+        }
+    }
+
+    fun saveGymLocker(locker: GymLockerEntity) {
+        val bizId = activeBusiness.value?.id ?: return
+        viewModelScope.launch {
+            gymRepository.saveLocker(locker.copy(businessId = bizId))
+        }
+    }
+
+    fun deleteGymLocker(id: Long) {
+        viewModelScope.launch {
+            gymRepository.deleteLocker(id)
+        }
     }
 
     // --- Restaurant Operations ---
@@ -1275,6 +1390,7 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
             restaurantRepository.toggleMenuItemAvailability(id, isAvailable)
         }
     }
+    fun toggleMenuAvailability(id: Long, isAvailable: Boolean) = toggleRestaurantMenuItemAvailability(id, isAvailable)
 
     fun saveAndSendOrderToKitchen(order: RestaurantOrderEntity, items: List<RestaurantOrderItemEntity>) {
         val bizId = activeBusiness.value?.id ?: return
@@ -1286,6 +1402,7 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
             )
         }
     }
+    fun sendOrderToKitchen(order: RestaurantOrderEntity, items: List<RestaurantOrderItemEntity>) = saveAndSendOrderToKitchen(order, items)
 
     fun settleRestaurantOrder(orderId: Long, tableId: Long, paymentMethod: String) {
         viewModelScope.launch {
@@ -1301,6 +1418,7 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
             _selectedRestaurantTableId.value = null
         }
     }
+    fun settleOrder(orderId: Long, tableId: Long, paymentMethod: String) = settleRestaurantOrder(orderId, tableId, paymentMethod)
 
     fun cancelRestaurantOrder(orderId: Long, tableId: Long) {
         viewModelScope.launch {
@@ -1312,6 +1430,7 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
             _selectedRestaurantTableId.value = null
         }
     }
+    fun cancelOrder(orderId: Long, tableId: Long) = cancelRestaurantOrder(orderId, tableId)
 
     fun updateKotItemStatus(itemId: Long, status: String) {
         viewModelScope.launch {
@@ -1512,6 +1631,17 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun completePharmacySale(
+        cartItems: List<PharmacyCartItem>,
+        customerName: String,
+        customerPhone: String,
+        doctorPrescriber: String,
+        discount: Double,
+        paymentMethod: String,
+        notes: String = "",
+        onSuccess: (PharmacySaleEntity) -> Unit = {}
+    ) = processPharmacyQuickSale(cartItems, customerName, customerPhone, doctorPrescriber, discount, paymentMethod, notes, onSuccess)
+
     fun deletePharmacySale(id: Long) {
         viewModelScope.launch {
             pharmacyRepository.deleteSale(id)
@@ -1646,6 +1776,34 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
         dateMillis: Long
     ) {
         markClassAttendanceAll(students, dateString, dateMillis, "PRESENT")
+    }
+
+    fun saveSchoolStaff(staff: SchoolStaffEntity, onDone: () -> Unit = {}) {
+        val bizId = activeBusiness.value?.id ?: return
+        viewModelScope.launch {
+            schoolRepository.saveStaff(staff.copy(businessId = bizId))
+            onDone()
+        }
+    }
+
+    fun deleteSchoolStaff(id: Long) {
+        viewModelScope.launch {
+            schoolRepository.deleteStaff(id)
+        }
+    }
+
+    fun saveSchoolExamResult(result: ExamResultEntity, onDone: () -> Unit = {}) {
+        val bizId = activeBusiness.value?.id ?: return
+        viewModelScope.launch {
+            schoolRepository.saveExamResult(result.copy(businessId = bizId))
+            onDone()
+        }
+    }
+
+    fun deleteSchoolExamResult(id: Long) {
+        viewModelScope.launch {
+            schoolRepository.deleteExamResult(id)
+        }
     }
 
     // --- Real Estate Operations ---

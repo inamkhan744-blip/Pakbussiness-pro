@@ -37,6 +37,8 @@ data class PatientEntity(
     val address: String = "",
     val medicalHistory: String = "",
     val createdAt: Long = System.currentTimeMillis()
-)
+) {
+    val mrNumber: String get() = "MR-$id"
+}
 
 typealias Patient = PatientEntity

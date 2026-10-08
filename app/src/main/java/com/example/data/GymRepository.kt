@@ -83,6 +83,29 @@ class GymRepository(private val gymDao: GymDao) {
         return gymDao.getCheckInsForMember(memberId)
     }
 
+    // --- Payments ---
+    fun getPayments(businessId: Long): Flow<List<GymPaymentEntity>> =
+        gymDao.getPayments(businessId)
+
+    suspend fun recordPayment(payment: GymPaymentEntity): Long =
+        gymDao.insertPayment(payment)
+
+    // --- Lockers ---
+    fun getLockers(businessId: Long): Flow<List<GymLockerEntity>> =
+        gymDao.getLockers(businessId)
+
+    suspend fun saveLocker(locker: GymLockerEntity): Long {
+        return if (locker.id == 0L) {
+            gymDao.insertLocker(locker)
+        } else {
+            gymDao.updateLocker(locker)
+            locker.id
+        }
+    }
+
+    suspend fun deleteLocker(id: Long) =
+        gymDao.deleteLocker(id)
+
     suspend fun ensureInitialGymData(businessId: Long) {
         // Disabled: user requested clean database without fake entries
     }

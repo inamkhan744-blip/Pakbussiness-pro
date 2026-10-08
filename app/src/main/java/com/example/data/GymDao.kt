@@ -52,4 +52,27 @@ interface GymDao {
 
     @Query("SELECT COUNT(*) FROM gym_members WHERE businessId = :businessId")
     suspend fun getMemberCount(businessId: Long): Int
+
+    // Payments
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPayment(payment: GymPaymentEntity): Long
+
+    @Query("SELECT * FROM gym_payments WHERE businessId = :businessId ORDER BY paymentDate DESC")
+    fun getPayments(businessId: Long): Flow<List<GymPaymentEntity>>
+
+    @Query("SELECT * FROM gym_payments WHERE memberId = :memberId ORDER BY paymentDate DESC")
+    fun getPaymentsForMember(memberId: Long): Flow<List<GymPaymentEntity>>
+
+    // Lockers
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLocker(locker: GymLockerEntity): Long
+
+    @Update
+    suspend fun updateLocker(locker: GymLockerEntity)
+
+    @Query("SELECT * FROM gym_lockers WHERE businessId = :businessId ORDER BY lockerNumber ASC")
+    fun getLockers(businessId: Long): Flow<List<GymLockerEntity>>
+
+    @Query("DELETE FROM gym_lockers WHERE id = :id")
+    suspend fun deleteLocker(id: Long)
 }
