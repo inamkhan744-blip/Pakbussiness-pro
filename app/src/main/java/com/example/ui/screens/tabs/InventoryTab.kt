@@ -1,5 +1,6 @@
 package com.example.ui.screens.tabs
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,8 +26,11 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -40,6 +44,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -66,6 +72,9 @@ import com.example.ui.theme.PakEmeraldDark
 import com.example.ui.theme.PakEmeraldPrimary
 import com.example.ui.theme.PakGoldContainer
 import com.example.ui.theme.PakGoldSecondary
+import com.example.util.InvoiceExportData
+import com.example.util.InvoiceExportItem
+import com.example.util.PdfExportUtil
 import java.util.Locale
 
 data class InventoryItem(
@@ -145,6 +154,7 @@ fun InventoryTab(
     business: BusinessEntity?,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val currency = business?.currency ?: "PKR"
     var searchQuery by remember { mutableStateOf("") }
     var showAddDialog by remember { mutableStateOf(false) }
@@ -170,6 +180,37 @@ fun InventoryTab(
     val totalCost = itemsList.sumOf { it.quantity * it.costPrice }
     val estimatedProfit = (totalValuation - totalCost).coerceAtLeast(0.0)
     val lowStockCount = itemsList.count { it.quantity <= it.minThreshold }
+
+    fun exportStockReportPdf(isPrint: Boolean) {
+        val invoiceItems = itemsList.map { item ->
+            InvoiceExportItem(
+                name = "${item.name} [SKU: ${item.sku}]",
+                quantity = item.quantity.toDouble(),
+                unitPrice = item.salePrice,
+                total = item.quantity * item.salePrice
+            )
+        }
+        val exportData = InvoiceExportData(
+            invoiceNumber = "STOCK-${System.currentTimeMillis() % 100000}",
+            businessName = business?.name ?: "PakBusiness Enterprise",
+            businessAddress = business?.address ?: "",
+            businessPhone = business?.phone ?: "",
+            customerName = "OFFICIAL INVENTORY AUDIT & STOCK VALUATION REPORT",
+            customerPhone = "Total SKUs: ${itemsList.size}",
+            items = invoiceItems,
+            subtotal = totalValuation,
+            discount = 0.0,
+            tax = 0.0,
+            grandTotal = totalValuation,
+            paymentMethod = "Total Valuation ($currency)",
+            footerNote = "Certified Stock Audit Report • Potential Profit Margin: $currency ${String.format(Locale.getDefault(), "%,.0f", estimatedProfit)}"
+        )
+        if (isPrint) {
+            PdfExportUtil.printInvoice(context, exportData)
+        } else {
+            PdfExportUtil.shareInvoice(context, exportData)
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize().testTag("inventory_screen")) {
         LazyColumn(
@@ -235,6 +276,39 @@ fun InventoryTab(
                             Column {
                                 Text("Low Stock Alert", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text("$lowStockCount Items", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = if (lowStockCount > 0) Color(0xFFDC2626) else MaterialTheme.colorScheme.onSurface)
+                            }
+                        }
+
+                        // Export & Print Stock Valuation PDF Buttons
+                        if (itemsList.isNotEmpty()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { exportStockReportPdf(isPrint = true) },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                    modifier = Modifier.weight(1f).testTag("btn_print_stock_report")
+                                ) {
+                                    Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(15.dp), tint = PakEmeraldPrimary)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Print PDF Report", fontSize = 11.sp, color = PakEmeraldPrimary)
+                                }
+
+                                Button(
+                                    onClick = { exportStockReportPdf(isPrint = false) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                    modifier = Modifier.weight(1f).testTag("btn_share_stock_report")
+                                ) {
+                                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(15.dp), tint = Color.White)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Share PDF Audit", fontSize = 11.sp, color = Color.White)
+                                }
                             }
                         }
                     }

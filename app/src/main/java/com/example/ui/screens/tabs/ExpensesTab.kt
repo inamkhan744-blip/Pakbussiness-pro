@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
@@ -70,6 +71,9 @@ import com.example.ui.theme.PakEmeraldContainer
 import com.example.ui.theme.PakEmeraldDark
 import com.example.ui.theme.PakEmeraldPrimary
 import com.example.ui.theme.PakGoldSecondary
+import com.example.util.InvoiceExportData
+import com.example.util.InvoiceExportItem
+import com.example.util.PdfExportUtil
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -226,6 +230,93 @@ fun ExpensesTab(
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFFFD54F)
                                 )
+                            }
+                        }
+                    }
+
+                    // Export / Print Expense Ledger PDF
+                    if (expenses.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    val expenseItems = filteredExpenses.map { exp ->
+                                        val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(exp.date))
+                                        InvoiceExportItem(
+                                            name = "${exp.title} [${exp.category}] ($dateStr)",
+                                            quantity = 1.0,
+                                            unitPrice = exp.amount,
+                                            total = exp.amount
+                                        )
+                                    }
+                                    val exportData = InvoiceExportData(
+                                        invoiceNumber = "EXP-${System.currentTimeMillis() % 100000}",
+                                        businessName = business?.name ?: "PakBusiness Enterprise",
+                                        businessAddress = business?.address ?: "",
+                                        businessPhone = business?.phone ?: "",
+                                        customerName = "OFFICIAL EXPENSE AUDIT & KHARCHA LEDGER",
+                                        customerPhone = "Category Filter: $selectedCategoryFilter | Entries: ${filteredExpenses.size}",
+                                        items = expenseItems,
+                                        subtotal = filteredExpenses.sumOf { it.amount },
+                                        discount = 0.0,
+                                        tax = 0.0,
+                                        grandTotal = filteredExpenses.sumOf { it.amount },
+                                        paymentMethod = "Total Paid Expenses ($currency)",
+                                        footerNote = "Certified Kharcha Statement • PakBusiness Pro"
+                                    )
+                                    PdfExportUtil.printInvoice(context, exportData)
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.weight(1f).testTag("btn_print_expenses_ledger")
+                            ) {
+                                Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(15.dp), tint = Color.White)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Print Kharcha PDF", fontSize = 11.sp, color = Color.White)
+                            }
+
+                            Button(
+                                onClick = {
+                                    val totalExp = filteredExpenses.sumOf { it.amount }
+                                    val todayStr = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date())
+                                    val summary = buildString {
+                                        appendLine("📊 *BUSINESS EXPENSE / KHARCHA AUDIT REPORT*")
+                                        appendLine("🏢 *${business?.name ?: "Business"}*")
+                                        appendLine("📅 *Report Date:* $todayStr")
+                                        appendLine("🔍 *Filter:* $selectedCategoryFilter | *Entries:* ${filteredExpenses.size}")
+                                        appendLine("💰 *TOTAL KHARCHA:* $currency ${String.format(Locale.getDefault(), "%,.0f", totalExp)}")
+                                        appendLine("────────────────────")
+                                        filteredExpenses.take(15).forEachIndexed { idx, exp ->
+                                            val d = SimpleDateFormat("dd/MM", Locale.getDefault()).format(Date(exp.date))
+                                            appendLine("${idx + 1}. *${exp.title}* [${exp.category}] ($d): $currency ${String.format(Locale.getDefault(), "%,.0f", exp.amount)}")
+                                        }
+                                        if (filteredExpenses.size > 15) {
+                                            appendLine("... and ${filteredExpenses.size - 15} more records")
+                                        }
+                                        appendLine("────────────────────")
+                                        appendLine("_Generated via PakBusiness Pro ERP_")
+                                    }
+
+                                    val sendIntent = Intent().apply {
+                                        action = Intent.ACTION_SEND
+                                        putExtra(Intent.EXTRA_TEXT, summary)
+                                        type = "text/plain"
+                                    }
+                                    context.startActivity(Intent.createChooser(sendIntent, "Share Expense Report"))
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = PakGoldSecondary),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.weight(1f).testTag("btn_share_expenses_ledger")
+                            ) {
+                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(15.dp), tint = Color.Black)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Share Report", fontSize = 11.sp, color = Color.Black)
                             }
                         }
                     }

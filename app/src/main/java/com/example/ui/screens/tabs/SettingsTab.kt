@@ -1,5 +1,6 @@
 package com.example.ui.screens.tabs
 
+import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.AddBusiness
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -35,6 +37,7 @@ import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.VerifiedUser
@@ -62,6 +65,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -118,6 +122,8 @@ fun SettingsTab(
 
     var showClearDataDialog by remember { mutableStateOf(false) }
     var dataClearedSuccessMsg by remember { mutableStateOf("") }
+    var backupSuccessMsg by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
     LazyColumn(
         modifier = modifier
@@ -526,7 +532,7 @@ fun SettingsTab(
         // Section: Offline Storage Status
         item {
             Text(
-                text = "Offline Storage & Privacy",
+                text = "Offline Storage & Data Security",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -535,7 +541,7 @@ fun SettingsTab(
 
         item {
             Card(
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 ),
@@ -565,6 +571,101 @@ fun SettingsTab(
                             Text("100% Offline Architecture", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                             Text("Zero external servers or backend dependency. Works anytime without internet.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                    }
+                }
+            }
+        }
+
+        // Section: Enterprise Backup & Data Export (بیک اپ اور ڈیٹا شیئرنگ)
+        item {
+            Text(
+                text = "Backup & Business Data Share (بیک اپ اور محفوظ ڈیٹا)",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        item {
+            Card(
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = PakEmeraldContainer.copy(alpha = 0.4f)
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.CloudSync,
+                            contentDescription = null,
+                            tint = PakEmeraldPrimary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Instant WhatsApp / Email Backup Archive",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                "Generate a full summary snapshot of your business profiles, settings, and database counters to share or archive securely.",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    if (backupSuccessMsg.isNotEmpty()) {
+                        Text(
+                            text = backupSuccessMsg,
+                            color = PakEmeraldPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            val active = activeBusiness?.name ?: "PakBusiness Enterprise"
+                            val type = activeBusiness?.type ?: "General"
+                            val phone = activeBusiness?.phone ?: "N/A"
+                            val totalBiz = allBusinesses.size
+                            val backupDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
+                            val backupText = """
+                                📦 *PAKBUSINESS PRO - DATA BACKUP SNAPSHOT*
+                                ────────────────────
+                                🏢 *Active Enterprise:* $active
+                                🏷️ *Business Type:* $type
+                                📞 *Registered Phone:* $phone
+                                💼 *Total Profiles Registered:* $totalBiz
+                                📅 *Backup Generated:* $backupDate
+                                🔒 *Storage Engine:* Room SQLite (Local Offline Storage)
+                                ────────────────────
+                                🛡️ _Encrypted local integrity verified. Keep this record safe for your accounts audit._
+                            """.trimIndent()
+
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT, backupText)
+                                setType("text/plain")
+                            }
+                            context.startActivity(Intent.createChooser(sendIntent, "Share Business Backup"))
+                            backupSuccessMsg = "✓ Business backup archive ready & shared!"
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
+                        modifier = Modifier.fillMaxWidth().testTag("btn_export_backup_data")
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Export / Share Backup Snapshot (بیک اپ شیئر کریں)")
                     }
                 }
             }

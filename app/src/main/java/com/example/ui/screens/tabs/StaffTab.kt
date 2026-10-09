@@ -32,6 +32,8 @@ import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -75,6 +77,9 @@ import com.example.ui.theme.PakEmeraldDark
 import com.example.ui.theme.PakEmeraldPrimary
 import com.example.ui.theme.PakGoldContainer
 import com.example.ui.theme.PakGoldSecondary
+import com.example.util.InvoiceExportData
+import com.example.util.InvoiceExportItem
+import com.example.util.PdfExportUtil
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -205,6 +210,92 @@ fun StaffTab(
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Text("Total Peshgi", fontSize = 10.sp, color = Color.White.copy(alpha = 0.7f))
                                 Text("$currency ${String.format(Locale.getDefault(), "%,.0f", totalAdvancesGiven)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFCC80))
+                            }
+                        }
+                    }
+
+                    // Print & Export Staff Payroll Register
+                    if (staffList.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    val payrollItems = staffList.map { staff ->
+                                        val net = maxOf(0.0, staff.monthlySalary - staff.advancePaid)
+                                        InvoiceExportItem(
+                                            name = "${staff.name} (${staff.role})",
+                                            quantity = 1.0,
+                                            unitPrice = staff.monthlySalary,
+                                            total = net
+                                        )
+                                    }
+                                    val exportData = InvoiceExportData(
+                                        invoiceNumber = "PAYROLL-${System.currentTimeMillis() % 100000}",
+                                        businessName = business?.name ?: "PakBusiness Enterprise",
+                                        businessAddress = business?.address ?: "",
+                                        businessPhone = business?.phone ?: "",
+                                        customerName = "MONTHLY STAFF SALARY & ATTENDANCE AUDIT REGISTER",
+                                        customerPhone = "Total Staff: ${staffList.size} | Present Today: $presentCount",
+                                        items = payrollItems,
+                                        subtotal = totalSalaryExpenditure,
+                                        discount = totalAdvancesGiven,
+                                        tax = 0.0,
+                                        grandTotal = maxOf(0.0, totalSalaryExpenditure - totalAdvancesGiven),
+                                        paymentMethod = "Net Payroll Liability ($currency)",
+                                        footerNote = "Authorized Monthly Salary Sheet • PakBusiness Pro"
+                                    )
+                                    PdfExportUtil.printInvoice(context, exportData)
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.weight(1f).testTag("btn_print_staff_payroll")
+                            ) {
+                                Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(15.dp), tint = Color.White)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Print Payroll PDF", fontSize = 11.sp, color = Color.White)
+                            }
+
+                            Button(
+                                onClick = {
+                                    val payrollSummary = buildString {
+                                        appendLine("📋 *OFFICIAL STAFF PAYROLL & ATTENDANCE REPORT*")
+                                        appendLine("🏢 *${business?.name ?: "Business"}*")
+                                        appendLine("📅 *Date:* $todayDateFormatted")
+                                        appendLine("👥 *Total Staff:* ${staffList.size} | *Present Today:* $presentCount")
+                                        appendLine("💵 *Monthly Budget:* $currency ${String.format(Locale.getDefault(), "%,.0f", totalSalaryExpenditure)}")
+                                        appendLine("🔻 *Total Advances Paid:* $currency ${String.format(Locale.getDefault(), "%,.0f", totalAdvancesGiven)}")
+                                        appendLine("────────────────────")
+                                        staffList.forEachIndexed { idx, s ->
+                                            val net = maxOf(0.0, s.monthlySalary - s.advancePaid)
+                                            val att = attendanceMap[s.id]?.status ?: "NOT MARKED"
+                                            appendLine("${idx + 1}. *${s.name}* (${s.role})")
+                                            appendLine("   • Salary: $currency ${String.format(Locale.getDefault(), "%,.0f", s.monthlySalary)} | Advance: $currency ${String.format(Locale.getDefault(), "%,.0f", s.advancePaid)}")
+                                            appendLine("   • Net Payable: $currency ${String.format(Locale.getDefault(), "%,.0f", net)} | Today: $att")
+                                        }
+                                        appendLine("────────────────────")
+                                        appendLine("_Generated via PakBusiness Pro_")
+                                    }
+
+                                    val sendIntent = Intent().apply {
+                                        action = Intent.ACTION_SEND
+                                        putExtra(Intent.EXTRA_TEXT, payrollSummary)
+                                        type = "text/plain"
+                                    }
+                                    context.startActivity(Intent.createChooser(sendIntent, "Share Payroll Report"))
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = PakGoldSecondary),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.weight(1f).testTag("btn_share_staff_payroll")
+                            ) {
+                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(15.dp), tint = Color.Black)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Share Report", fontSize = 11.sp, color = Color.Black)
                             }
                         }
                     }
@@ -426,12 +517,46 @@ fun StaffTab(
                                 TextButton(onClick = { staffForAdvanceDialog = staff }) {
                                     Icon(Icons.Default.Payments, contentDescription = null, modifier = Modifier.size(16.dp), tint = PakEmeraldPrimary)
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("+ Advance Peshgi", fontSize = 12.sp, color = PakEmeraldPrimary)
+                                    Text("+ Advance", fontSize = 11.sp, color = PakEmeraldPrimary)
+                                }
+
+                                val netPayable = maxOf(0.0, staff.monthlySalary - staff.advancePaid)
+
+                                OutlinedButton(
+                                    onClick = {
+                                        val slipData = InvoiceExportData(
+                                            invoiceNumber = "SLIP-${staff.id}-${System.currentTimeMillis() % 10000}",
+                                            businessName = business?.name ?: "PakBusiness Enterprise",
+                                            businessAddress = business?.address ?: "",
+                                            businessPhone = business?.phone ?: "",
+                                            customerName = "${staff.name} (${staff.role})",
+                                            customerPhone = staff.phone,
+                                            items = listOf(
+                                                InvoiceExportItem(name = "Monthly Basic Salary", quantity = 1.0, unitPrice = staff.monthlySalary, total = staff.monthlySalary),
+                                                InvoiceExportItem(name = "Advance / Peshgi Deducted", quantity = 1.0, unitPrice = -staff.advancePaid, total = -staff.advancePaid)
+                                            ),
+                                            subtotal = staff.monthlySalary,
+                                            discount = staff.advancePaid,
+                                            tax = 0.0,
+                                            grandTotal = netPayable,
+                                            paymentMethod = "Salary Payment (${currency})",
+                                            amountPaid = netPayable,
+                                            changeDue = 0.0,
+                                            footerNote = "Authorized Monthly Salary Parcha • PakBusiness Pro"
+                                        )
+                                        PdfExportUtil.printInvoice(context, slipData)
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                    modifier = Modifier.padding(end = 4.dp).testTag("btn_print_salary_slip_${staff.id}")
+                                ) {
+                                    Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(14.dp), tint = PakEmeraldPrimary)
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text("Print", fontSize = 11.sp, color = PakEmeraldPrimary)
                                 }
 
                                 Button(
                                     onClick = {
-                                        val netPayable = maxOf(0.0, staff.monthlySalary - staff.advancePaid)
                                         val slip = """
                                             *EMPLOYEE SALARY SLIP / PARCHA*
                                             🏢 *${business?.name ?: "Business"}*
@@ -461,7 +586,7 @@ fun StaffTab(
                                 ) {
                                     Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("WhatsApp Slip", fontSize = 11.sp)
+                                    Text("WhatsApp", fontSize = 11.sp)
                                 }
                             }
                         }

@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.MonetizationOn
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TrendingDown
@@ -69,6 +71,9 @@ import com.example.ui.theme.PakEmeraldDark
 import com.example.ui.theme.PakEmeraldPrimary
 import com.example.ui.theme.PakGoldContainer
 import com.example.ui.theme.PakGoldSecondary
+import com.example.util.InvoiceExportData
+import com.example.util.InvoiceExportItem
+import com.example.util.PdfExportUtil
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -222,50 +227,89 @@ fun ReportsTab(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text("End of Day Closing (Z-Report)", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                 Text(todayDateFormatted, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
 
-                            Button(
-                                onClick = {
-                                    val zReport = """
-                                        *DAILY DAY-END CLOSING (Z-REPORT)*
-                                        🏢 *${business?.name ?: "Business"}*
-                                        📅 *Date:* $todayDateFormatted
-                                        👤 *Owner/Manager:* ${business?.ownerName ?: "Admin"}
-                                        ─────────────────────────
-                                        💵 *Opening Cash in Counter:* $currency ${String.format(Locale.getDefault(), "%,.0f", openingCash)}
-                                        ─────────────────────────
-                                        *TODAY'S SALES BREAKDOWN:*
-                                        🟢 Cash Sales: $currency ${String.format(Locale.getDefault(), "%,.0f", estimatedCashSales)}
-                                        🔵 Online/Card: $currency ${String.format(Locale.getDefault(), "%,.0f", estimatedOnlineSales)}
-                                        🟠 Udhaar/Khata Given: $currency ${String.format(Locale.getDefault(), "%,.0f", estimatedUdhaarSales)}
-                                        👉 *TOTAL REVENUE TODAY:* $currency ${String.format(Locale.getDefault(), "%,.0f", estimatedSalesToday)}
-                                        ─────────────────────────
-                                        *TODAY'S CASH OUT / EXPENSES:*
-                                        🔴 Total Daily Kharcha: -$currency ${String.format(Locale.getDefault(), "%,.0f", todayExpensesTotal)}
-                                        ─────────────────────────
-                                        💰 *EXPECTED CASH IN DRAWER:* $currency ${String.format(Locale.getDefault(), "%,.0f", expectedCashInDrawer)}
-                                        📊 *NET PROFIT TODAY:* $currency ${String.format(Locale.getDefault(), "%,.0f", netProfitToday)}
-                                        ─────────────────────────
-                                        _Certified by PakBusiness Pro Enterprise Suite_
-                                    """.trimIndent()
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                OutlinedButton(
+                                    onClick = {
+                                        val zItems = listOf(
+                                            InvoiceExportItem("Opening Cash in Counter", 1.0, openingCash, openingCash),
+                                            InvoiceExportItem("Cash Sales Today", 1.0, estimatedCashSales, estimatedCashSales),
+                                            InvoiceExportItem("Online / Card Sales", 1.0, estimatedOnlineSales, estimatedOnlineSales),
+                                            InvoiceExportItem("Udhaar / Khata Sales", 1.0, estimatedUdhaarSales, estimatedUdhaarSales),
+                                            InvoiceExportItem("Daily Kharcha (Expenses)", 1.0, -todayExpensesTotal, -todayExpensesTotal)
+                                        )
+                                        val zDoc = InvoiceExportData(
+                                            invoiceNumber = "Z-${System.currentTimeMillis() % 100000}",
+                                            businessName = business?.name ?: "PakBusiness Store",
+                                            businessAddress = business?.address ?: "",
+                                            businessPhone = business?.phone ?: "",
+                                            customerName = "OFFICIAL DAILY CLOSING (Z-REPORT)",
+                                            customerPhone = todayDateFormatted,
+                                            items = zItems,
+                                            subtotal = estimatedSalesToday,
+                                            discount = todayExpensesTotal,
+                                            tax = 0.0,
+                                            grandTotal = expectedCashInDrawer,
+                                            paymentMethod = "Expected Drawer Cash ($currency)",
+                                            amountPaid = expectedCashInDrawer,
+                                            changeDue = 0.0,
+                                            footerNote = "End of Day Certified Closing • Net Profit Today: $currency ${String.format(Locale.getDefault(), "%,.0f", netProfitToday)}"
+                                        )
+                                        PdfExportUtil.printInvoice(context, zDoc)
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                                    modifier = Modifier.testTag("btn_print_z_report_pdf")
+                                ) {
+                                    Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(15.dp), tint = PakEmeraldPrimary)
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text("Print", fontSize = 11.sp, color = PakEmeraldPrimary)
+                                }
 
-                                    val sendIntent = Intent().apply {
-                                        action = Intent.ACTION_SEND
-                                        putExtra(Intent.EXTRA_TEXT, zReport)
-                                        type = "text/plain"
-                                    }
-                                    context.startActivity(Intent.createChooser(sendIntent, "Send Z-Report to Owner via WhatsApp"))
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("WhatsApp Z-Report", fontSize = 12.sp)
+                                Button(
+                                    onClick = {
+                                        val zReport = """
+                                            *DAILY DAY-END CLOSING (Z-REPORT)*
+                                            🏢 *${business?.name ?: "Business"}*
+                                            📅 *Date:* $todayDateFormatted
+                                            👤 *Owner/Manager:* ${business?.ownerName ?: "Admin"}
+                                            ─────────────────────────
+                                            💵 *Opening Cash in Counter:* $currency ${String.format(Locale.getDefault(), "%,.0f", openingCash)}
+                                            ─────────────────────────
+                                            *TODAY'S SALES BREAKDOWN:*
+                                            🟢 Cash Sales: $currency ${String.format(Locale.getDefault(), "%,.0f", estimatedCashSales)}
+                                            🔵 Online/Card: $currency ${String.format(Locale.getDefault(), "%,.0f", estimatedOnlineSales)}
+                                            🟠 Udhaar/Khata Given: $currency ${String.format(Locale.getDefault(), "%,.0f", estimatedUdhaarSales)}
+                                            👉 *TOTAL REVENUE TODAY:* $currency ${String.format(Locale.getDefault(), "%,.0f", estimatedSalesToday)}
+                                            ─────────────────────────
+                                            *TODAY'S CASH OUT / EXPENSES:*
+                                            🔴 Total Daily Kharcha: -$currency ${String.format(Locale.getDefault(), "%,.0f", todayExpensesTotal)}
+                                            ─────────────────────────
+                                            💰 *EXPECTED CASH IN DRAWER:* $currency ${String.format(Locale.getDefault(), "%,.0f", expectedCashInDrawer)}
+                                            📊 *NET PROFIT TODAY:* $currency ${String.format(Locale.getDefault(), "%,.0f", netProfitToday)}
+                                            ─────────────────────────
+                                            _Certified by PakBusiness Pro Enterprise Suite_
+                                        """.trimIndent()
+
+                                        val sendIntent = Intent().apply {
+                                            action = Intent.ACTION_SEND
+                                            putExtra(Intent.EXTRA_TEXT, zReport)
+                                            type = "text/plain"
+                                        }
+                                        context.startActivity(Intent.createChooser(sendIntent, "Send Z-Report to Owner via WhatsApp"))
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(15.dp))
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text("WhatsApp", fontSize = 11.sp)
+                                }
                             }
                         }
 
@@ -365,6 +409,81 @@ fun ReportsTab(
                                     fontSize = 12.sp,
                                     color = Color(0xFF1B5E20)
                                 )
+                            }
+                        }
+
+                        // Export / Print P&L Statement PDF
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    val plDoc = InvoiceExportData(
+                                        invoiceNumber = "PL-${System.currentTimeMillis() % 100000}",
+                                        businessName = business?.name ?: "PakBusiness Store",
+                                        businessAddress = business?.address ?: "",
+                                        businessPhone = business?.phone ?: "",
+                                        customerName = "OFFICIAL MONTHLY PROFIT & LOSS STATEMENT",
+                                        customerPhone = todayDateFormatted,
+                                        items = listOf(
+                                            InvoiceExportItem("Gross Operating Turnover (Sales)", 1.0, monthlySales, monthlySales),
+                                            InvoiceExportItem("Operating Expenses (Kharcha & Salaries)", 1.0, -monthlyExpenses, -monthlyExpenses)
+                                        ),
+                                        subtotal = monthlySales,
+                                        discount = monthlyExpenses,
+                                        tax = 0.0,
+                                        grandTotal = monthlyNetProfit,
+                                        paymentMethod = "Net Operating Profit (${currency})",
+                                        amountPaid = monthlyNetProfit,
+                                        changeDue = 0.0,
+                                        footerNote = "Net Profit Margin: ${String.format(Locale.getDefault(), "%.1f", margin)}% • Verified Financial Audit"
+                                    )
+                                    PdfExportUtil.printInvoice(context, plDoc)
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                modifier = Modifier.weight(1f).testTag("btn_print_pl_report")
+                            ) {
+                                Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(15.dp), tint = PakEmeraldPrimary)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Print P&L Statement", fontSize = 11.sp, color = PakEmeraldPrimary)
+                            }
+
+                            Button(
+                                onClick = {
+                                    val plDoc = InvoiceExportData(
+                                        invoiceNumber = "PL-${System.currentTimeMillis() % 100000}",
+                                        businessName = business?.name ?: "PakBusiness Store",
+                                        businessAddress = business?.address ?: "",
+                                        businessPhone = business?.phone ?: "",
+                                        customerName = "OFFICIAL MONTHLY PROFIT & LOSS STATEMENT",
+                                        customerPhone = todayDateFormatted,
+                                        items = listOf(
+                                            InvoiceExportItem("Gross Operating Turnover (Sales)", 1.0, monthlySales, monthlySales),
+                                            InvoiceExportItem("Operating Expenses (Kharcha & Salaries)", 1.0, -monthlyExpenses, -monthlyExpenses)
+                                        ),
+                                        subtotal = monthlySales,
+                                        discount = monthlyExpenses,
+                                        tax = 0.0,
+                                        grandTotal = monthlyNetProfit,
+                                        paymentMethod = "Net Operating Profit (${currency})",
+                                        amountPaid = monthlyNetProfit,
+                                        changeDue = 0.0,
+                                        footerNote = "Net Profit Margin: ${String.format(Locale.getDefault(), "%.1f", margin)}% • Verified Financial Audit"
+                                    )
+                                    PdfExportUtil.shareInvoice(context, plDoc)
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                modifier = Modifier.weight(1f).testTag("btn_share_pl_report")
+                            ) {
+                                Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(15.dp), tint = Color.White)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Share PDF Audit", fontSize = 11.sp, color = Color.White)
                             }
                         }
                     }

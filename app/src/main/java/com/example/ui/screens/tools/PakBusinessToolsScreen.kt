@@ -69,7 +69,9 @@ fun PakBusinessToolsScreen(
         "Maund / KG",
         "Gold / Tola",
         "Fabric Gaz/M",
-        "GST / Tax"
+        "GST / Tax",
+        "Zakat 2.5%",
+        "Dalali / Commission"
     )
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -101,6 +103,8 @@ fun PakBusinessToolsScreen(
             2 -> GoldJewelryCalculator(appLanguage)
             3 -> FabricMeasurementCalculator(appLanguage)
             4 -> GstTaxCalculator(appLanguage)
+            5 -> ZakatCalculator(appLanguage)
+            6 -> CommissionBrokerageCalculator(appLanguage)
         }
     }
 }
@@ -571,6 +575,213 @@ fun GstTaxCalculator(appLanguage: AppLanguage) {
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
                     )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 6. Annual Islamic Zakat & Business Wealth Calculator (زکوٰۃ 2.5% حساب)
+ */
+@Composable
+fun ZakatCalculator(appLanguage: AppLanguage) {
+    var cashOnHand by remember { mutableStateOf("150000") }
+    var bankBalance by remember { mutableStateOf("500000") }
+    var goldSilverValue by remember { mutableStateOf("300000") }
+    var tradeStockValue by remember { mutableStateOf("750000") }
+    var shortTermLiabilities by remember { mutableStateOf("200000") }
+
+    val cash = cashOnHand.toDoubleOrNull() ?: 0.0
+    val bank = bankBalance.toDoubleOrNull() ?: 0.0
+    val gold = goldSilverValue.toDoubleOrNull() ?: 0.0
+    val stock = tradeStockValue.toDoubleOrNull() ?: 0.0
+    val debts = shortTermLiabilities.toDoubleOrNull() ?: 0.0
+
+    val grossZakatable = cash + bank + gold + stock
+    val netZakatable = (grossZakatable - debts).coerceAtLeast(0.0)
+    val zakatPayable = netZakatable * 0.025 // 2.5% rate
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = PakEmeraldDark),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "Zakat Due (2.5% of Net Wealth) / واجب الادا زکوٰۃ", color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp)
+                    Text(
+                        text = "₨ ${"%,.0f".format(zakatPayable)}",
+                        color = Color(0xFFFFD54F),
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Net Zakatable Wealth: ₨ ${"%,.0f".format(netZakatable)}",
+                        color = Color.White,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Zakatable Business & Personal Assets", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+
+                    OutlinedTextField(
+                        value = cashOnHand,
+                        onValueChange = { cashOnHand = it },
+                        label = { Text("Cash on Hand / Galla (₨)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = bankBalance,
+                        onValueChange = { bankBalance = it },
+                        label = { Text("Bank Accounts Balance (₨)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = goldSilverValue,
+                        onValueChange = { goldSilverValue = it },
+                        label = { Text("Gold / Silver Jewelry Market Value (₨)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = tradeStockValue,
+                        onValueChange = { tradeStockValue = it },
+                        label = { Text("Business Trading Inventory / Stock for Sale (₨)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                    Text("Deductible Liabilities & Debts", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.error)
+
+                    OutlinedTextField(
+                        value = shortTermLiabilities,
+                        onValueChange = { shortTermLiabilities = it },
+                        label = { Text("Current Debts / Supplier Udhaar Payable (₨)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 7. Brokerage, Commission & Mandi Dalali Calculator (دلاّلی و کمیشن حساب)
+ */
+@Composable
+fun CommissionBrokerageCalculator(appLanguage: AppLanguage) {
+    var dealAmountStr by remember { mutableStateOf("500000") }
+    var commissionRateStr by remember { mutableStateOf("2.0") } // Standard 1-2% in property, auto, mandi
+    var deductTds by remember { mutableStateOf(false) }
+    var tdsRateStr by remember { mutableStateOf("10.0") } // FBR WHT on commission 10%
+
+    val dealAmount = dealAmountStr.toDoubleOrNull() ?: 0.0
+    val rate = commissionRateStr.toDoubleOrNull() ?: 0.0
+    val tdsRate = tdsRateStr.toDoubleOrNull() ?: 0.0
+
+    val grossCommission = dealAmount * (rate / 100.0)
+    val withholdingTax = if (deductTds) grossCommission * (tdsRate / 100.0) else 0.0
+    val netCommission = grossCommission - withholdingTax
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = PakEmeraldDark),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "Net Brokerage Commission / خالص کمیشن", color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp)
+                    Text(
+                        text = "₨ ${"%,.2f".format(netCommission)}",
+                        color = Color(0xFFFFD54F),
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Gross: ₨ ${"%,.0f".format(grossCommission)} (${rate}%) ${if (deductTds) "| WHT: ₨ ${"%,.0f".format(withholdingTax)}" else ""}",
+                        color = Color.White,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = dealAmountStr,
+                        onValueChange = { dealAmountStr = it },
+                        label = { Text("Deal / Transaction Total Amount (₨)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = commissionRateStr,
+                        onValueChange = { commissionRateStr = it },
+                        label = { Text("Commission Rate % (e.g. 1%, 2% Real Estate / Mandi)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Deduct FBR WHT / Advance Tax on Commission", fontSize = 13.sp)
+                        androidx.compose.material3.Switch(
+                            checked = deductTds,
+                            onCheckedChange = { deductTds = it }
+                        )
+                    }
+
+                    if (deductTds) {
+                        OutlinedTextField(
+                            value = tdsRateStr,
+                            onValueChange = { tdsRateStr = it },
+                            label = { Text("WHT Tax % (e.g. 10% Filer, 20% Non-Filer)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         }
