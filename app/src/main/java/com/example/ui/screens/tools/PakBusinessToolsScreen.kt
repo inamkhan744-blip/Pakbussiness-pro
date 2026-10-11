@@ -30,6 +30,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -71,15 +72,19 @@ fun PakBusinessToolsScreen(
         "Fabric Gaz/M",
         "GST / Tax",
         "Zakat 2.5%",
-        "Dalali / Commission"
+        "Dalali / Comm.",
+        "Milk / Doodh",
+        "Saria / Cement",
+        "Profit Margin"
     )
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Tools Sub-Tab Row
-        TabRow(
+        // Tools Sub-Tab Row with horizontal scrolling for rich Pakistani trade tools
+        ScrollableTabRow(
             selectedTabIndex = selectedToolIndex,
             containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = PakEmeraldPrimary
+            contentColor = PakEmeraldPrimary,
+            edgePadding = 8.dp
         ) {
             toolTitles.forEachIndexed { index, title ->
                 Tab(
@@ -105,6 +110,9 @@ fun PakBusinessToolsScreen(
             4 -> GstTaxCalculator(appLanguage)
             5 -> ZakatCalculator(appLanguage)
             6 -> CommissionBrokerageCalculator(appLanguage)
+            7 -> MilkDairyCalculator(appLanguage)
+            8 -> ConstructionMaterialCalculator(appLanguage)
+            9 -> ProfitMarginMarkupCalculator(appLanguage)
         }
     }
 }
@@ -782,6 +790,339 @@ fun CommissionBrokerageCalculator(appLanguage: AppLanguage) {
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 8. Dairy & Milk Shop Calculator (دودھ اور دہی کا حساب)
+ * Fat LR test / per litre conversion / water deduction / daily supply total
+ */
+@Composable
+fun MilkDairyCalculator(appLanguage: AppLanguage) {
+    var litersStr by remember { mutableStateOf("40") }
+    var ratePerLiterStr by remember { mutableStateOf("210") }
+    var fatPercentStr by remember { mutableStateOf("6.0") }
+    var baseFatPercentStr by remember { mutableStateOf("6.0") }
+    var deductionPercentStr by remember { mutableStateOf("0") }
+
+    val liters = litersStr.toDoubleOrNull() ?: 0.0
+    val ratePerLiter = ratePerLiterStr.toDoubleOrNull() ?: 0.0
+    val fat = fatPercentStr.toDoubleOrNull() ?: 6.0
+    val baseFat = (baseFatPercentStr.toDoubleOrNull() ?: 6.0).coerceAtLeast(0.1)
+    val deduction = deductionPercentStr.toDoubleOrNull() ?: 0.0
+
+    // Adjusted rate based on fat content formula (standard Pakistani gawala formula)
+    val fatMultiplier = (fat / baseFat).coerceIn(0.5, 1.8)
+    val effectiveRate = ratePerLiter * fatMultiplier
+    val netLiters = (liters * (1.0 - (deduction / 100.0))).coerceAtLeast(0.0)
+    val totalAmount = netLiters * effectiveRate
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF0284C7)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Total Milk Bill / کل رقم",
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        text = "₨ ${"%,.0f".format(totalAmount)}",
+                        color = Color(0xFFFFD54F),
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Net: ${"%.1f".format(netLiters)} Liters • Effective Rate: ₨ ${"%.1f".format(effectiveRate)}/L",
+                        color = Color.White,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = litersStr,
+                        onValueChange = { litersStr = it },
+                        label = { Text("Milk Quantity (Liters / کلو)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = ratePerLiterStr,
+                        onValueChange = { ratePerLiterStr = it },
+                        label = { Text("Base Rate per Liter (₨)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = fatPercentStr,
+                            onValueChange = { fatPercentStr = it },
+                            label = { Text("Measured Fat %") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = baseFatPercentStr,
+                            onValueChange = { baseFatPercentStr = it },
+                            label = { Text("Standard Base Fat %") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    OutlinedTextField(
+                        value = deductionPercentStr,
+                        onValueChange = { deductionPercentStr = it },
+                        label = { Text("Kharaba / Water Deduction %") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 9. Construction Materials & Cement/Saria Calculator (سریے اور سیمنٹ کا حساب)
+ * Converts Saria length/soot (سووت) to KG/Tonnes, and Bag requirement
+ */
+@Composable
+fun ConstructionMaterialCalculator(appLanguage: AppLanguage) {
+    var sariaLengthFeetStr by remember { mutableStateOf("100") }
+    var sootSizeStr by remember { mutableStateOf("4") } // 4 soot = 1/2 inch
+    var sariaRatePerKgStr by remember { mutableStateOf("265") }
+
+    var cementBagsStr by remember { mutableStateOf("50") }
+    var cementRatePerBagStr by remember { mutableStateOf("1350") }
+
+    val lengthFeet = sariaLengthFeetStr.toDoubleOrNull() ?: 0.0
+    val soot = sootSizeStr.toDoubleOrNull() ?: 4.0
+    val sariaRatePerKg = sariaRatePerKgStr.toDoubleOrNull() ?: 0.0
+
+    val cementBags = cementBagsStr.toIntOrNull() ?: 0
+    val cementRatePerBag = cementRatePerBagStr.toDoubleOrNull() ?: 0.0
+
+    // Standard formula: Weight per foot = (soot * soot) / 24 lbs = approx ((soot * soot) / 53) KG
+    val sariaWeightKg = (lengthFeet * (soot * soot)) / 53.0
+    val sariaTotalCost = sariaWeightKg * sariaRatePerKg
+    val cementTotalCost = cementBags * cementRatePerBag
+    val grandTotal = sariaTotalCost + cementTotalCost
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF475569)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Total Material Cost / کل خرچہ",
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        text = "₨ ${"%,.0f".format(grandTotal)}",
+                        color = Color(0xFFFFD54F),
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Saria: ${"%.1f".format(sariaWeightKg)} KG (₨ ${"%,.0f".format(sariaTotalCost)}) • Cement: ₨ ${"%,.0f".format(cementTotalCost)}",
+                        color = Color.White,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text("Steel / Saria (سریا) Estimation", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = sariaLengthFeetStr,
+                            onValueChange = { sariaLengthFeetStr = it },
+                            label = { Text("Total Length (Feet)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = sootSizeStr,
+                            onValueChange = { sootSizeStr = it },
+                            label = { Text("Bar Size (Soot / سوتر e.g 3,4,6)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    OutlinedTextField(
+                        value = sariaRatePerKgStr,
+                        onValueChange = { sariaRatePerKgStr = it },
+                        label = { Text("Saria Rate per KG (₨)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    HorizontalDivider()
+
+                    Text("Cement (سیمنٹ) Bags", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = cementBagsStr,
+                            onValueChange = { cementBagsStr = it },
+                            label = { Text("Cement Bags (بوریاں)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = cementRatePerBagStr,
+                            onValueChange = { cementRatePerBagStr = it },
+                            label = { Text("Rate per Bag (₨)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 10. Profit Margin & Markup Calculator (منافع اور مارک اپ کیلکولیٹر)
+ */
+@Composable
+fun ProfitMarginMarkupCalculator(appLanguage: AppLanguage) {
+    var costPriceStr by remember { mutableStateOf("1000") }
+    var targetMarkupPercentStr by remember { mutableStateOf("25") }
+
+    val cost = costPriceStr.toDoubleOrNull() ?: 0.0
+    val markupPercent = targetMarkupPercentStr.toDoubleOrNull() ?: 0.0
+
+    val profitAmount = cost * (markupPercent / 100.0)
+    val sellingPrice = cost + profitAmount
+    val profitMarginPercent = if (sellingPrice > 0) (profitAmount / sellingPrice) * 100.0 else 0.0
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = PakEmeraldDark),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Recommended Sale Price / فروخت قیمت",
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        text = "₨ ${"%,.0f".format(sellingPrice)}",
+                        color = Color(0xFFFFD54F),
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Net Profit: ₨ ${"%,.0f".format(profitAmount)} • Margin: ${"%.1f".format(profitMarginPercent)}%",
+                        color = Color.White,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = costPriceStr,
+                        onValueChange = { costPriceStr = it },
+                        label = { Text("Cost / Purchase Price (خرید قیمت)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = targetMarkupPercentStr,
+                        onValueChange = { targetMarkupPercentStr = it },
+                        label = { Text("Target Profit Markup % (e.g. 20%, 30%)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }

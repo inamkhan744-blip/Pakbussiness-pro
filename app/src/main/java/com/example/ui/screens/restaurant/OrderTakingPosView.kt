@@ -1,5 +1,6 @@
 package com.example.ui.screens.restaurant
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.filled.LocalAtm
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
@@ -75,7 +77,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import com.example.ui.components.BarcodeScannerDialog
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -125,6 +129,46 @@ fun OrderTakingPosView(
 
     var showSettleDialog by remember { mutableStateOf(false) }
     var showTablePickerSheet by remember { mutableStateOf(false) }
+    var showBarcodeScanner by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    fun addProductByBarcodeOrCode(code: String) {
+        val trimmed = code.trim()
+        val matchedItem = menuItems.find { item ->
+            item.id.toString() == trimmed ||
+            item.name.equals(trimmed, ignoreCase = true) ||
+            item.name.contains(trimmed, ignoreCase = true) ||
+            trimmed.contains(item.name, ignoreCase = true)
+        } ?: menuItems.firstOrNull()
+
+        if (matchedItem != null) {
+            val existingIndex = cartItems.indexOfFirst { it.menuItemId == matchedItem.id }
+            if (existingIndex >= 0) {
+                val current = cartItems[existingIndex]
+                cartItems[existingIndex] = current.copy(quantity = current.quantity + 1)
+            } else {
+                val tbl = selectedTable ?: allTables.firstOrNull()
+                cartItems.add(
+                    RestaurantOrderItemEntity(
+                        orderId = existingOrder?.id ?: 0L,
+                        businessId = tbl?.businessId ?: 0L,
+                        tableId = tbl?.id ?: 0L,
+                        tableName = tbl?.name ?: "Takeaway",
+                        menuItemId = matchedItem.id,
+                        itemName = matchedItem.name,
+                        itemCategory = matchedItem.category,
+                        unitPricePkr = matchedItem.pricePkr,
+                        quantity = 1,
+                        instructions = "",
+                        kotStatus = "PENDING"
+                    )
+                )
+            }
+            Toast.makeText(context, "Added ${matchedItem.name} (₨ ${matchedItem.pricePkr.toInt()}) to Cart!", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "No dish matching barcode '$trimmed'", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     val currencyFormatter = remember {
         NumberFormat.getNumberInstance(Locale.US).apply {
@@ -285,27 +329,51 @@ fun OrderTakingPosView(
                     .fillMaxSize()
                     .padding(horizontal = 14.dp, vertical = 8.dp)
             ) {
-                // Search bar
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search menu items...") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = PakEmeraldPrimary)
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotBlank()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear")
+                // Search bar & CameraX Barcode Scanner
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Search dishes or scan barcode...") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = null, tint = PakEmeraldPrimary)
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotBlank()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                }
                             }
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("pos_search_input")
+                    )
+
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = PakEmeraldPrimary,
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clickable { showBarcodeScanner = true }
+                            .testTag("btn_restaurant_barcode_scanner")
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.QrCodeScanner,
+                                contentDescription = "Scan Barcode with Camera",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("pos_search_input")
-                )
+                    }
+                }
 
                 // Category Chips
                 LazyRow(
@@ -930,6 +998,21 @@ fun OrderTakingPosView(
                     Text("Close")
                 }
             }
+        )
+    }
+
+    // CameraX Barcode & QR Scanner Dialog for rapid cart adding
+    if (showBarcodeScanner) {
+        val sampleDishBarcodes = remember(menuItems) {
+            menuItems.take(5).map { it.name }
+        }
+
+        BarcodeScannerDialog(
+            onBarcodeScanned = { barcode ->
+                addProductByBarcodeOrCode(barcode)
+            },
+            onDismiss = { showBarcodeScanner = false },
+            sampleBarcodes = sampleDishBarcodes
         )
     }
 }

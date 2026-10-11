@@ -21,7 +21,10 @@ data class StaffEntity(
     val monthlySalary: Double,
     val advancePaid: Double = 0.0, // Peshgi
     val joiningDate: String = "",
-    val status: String = "ACTIVE" // ACTIVE, INACTIVE
+    val status: String = "ACTIVE", // ACTIVE, INACTIVE
+    val staffCode: String = "", // e.g. STF-101 (Staff Login ID)
+    val loginPin: String = "", // Staff 4-6 digit Login PIN
+    val accessLevel: String = "STAFF" // OWNER, MANAGER, CASHIER, STAFF
 )
 
 @Entity(tableName = "staff_attendance")
@@ -40,6 +43,9 @@ data class StaffAttendanceEntity(
 interface StaffDao {
     @Query("SELECT * FROM staff_members WHERE businessId = :businessId ORDER BY name ASC")
     fun getStaffForBusiness(businessId: Long): Flow<List<StaffEntity>>
+
+    @Query("SELECT * FROM staff_members WHERE businessId = :businessId AND (staffCode = :codeOrPhone OR phone = :codeOrPhone) LIMIT 1")
+    suspend fun findStaffByCodeOrPhone(businessId: Long, codeOrPhone: String): StaffEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertStaff(staff: StaffEntity): Long
@@ -70,6 +76,9 @@ interface StaffDao {
 class StaffRepository(private val dao: StaffDao) {
     fun getStaff(businessId: Long): Flow<List<StaffEntity>> =
         dao.getStaffForBusiness(businessId)
+
+    suspend fun findStaff(businessId: Long, codeOrPhone: String): StaffEntity? =
+        dao.findStaffByCodeOrPhone(businessId, codeOrPhone)
 
     suspend fun saveStaff(staff: StaffEntity): Long =
         dao.insertStaff(staff)

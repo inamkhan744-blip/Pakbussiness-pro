@@ -22,9 +22,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddBusiness
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
@@ -72,11 +74,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.BusinessEntity
 import com.example.ui.AppLanguage
 import com.example.ui.BusinessViewModel
 import com.example.ui.Localization
+import com.example.ui.components.RoomDatabaseBackupRestoreView
 import com.example.ui.screens.tools.PakBusinessToolsScreen
 import com.example.ui.theme.PakEmeraldContainer
 import com.example.ui.theme.PakEmeraldDark
@@ -121,6 +126,7 @@ fun SettingsTab(
     var secSavedMessage by remember { mutableStateOf("") }
 
     var showClearDataDialog by remember { mutableStateOf(false) }
+    var showDatabaseBackupUtilitySheet by remember { mutableStateOf(false) }
     var dataClearedSuccessMsg by remember { mutableStateOf("") }
     var backupSuccessMsg by remember { mutableStateOf("") }
     val context = LocalContext.current
@@ -667,6 +673,16 @@ fun SettingsTab(
                         Spacer(Modifier.width(8.dp))
                         Text("Export / Share Backup Snapshot (بیک اپ شیئر کریں)")
                     }
+
+                    OutlinedButton(
+                        onClick = { showDatabaseBackupUtilitySheet = true },
+                        modifier = Modifier.fillMaxWidth().testTag("btn_open_room_database_backup_utility"),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Archive, contentDescription = null, tint = PakEmeraldPrimary, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Database File Backup & Restore Utility (.pakdb)", color = PakEmeraldPrimary, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
         }
@@ -925,5 +941,43 @@ fun SettingsTab(
                 }
             }
         )
+    }
+
+    if (showDatabaseBackupUtilitySheet) {
+        Dialog(
+            onDismissRequest = { showDatabaseBackupUtilitySheet = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Room Database Backup & Restore",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                        IconButton(onClick = { showDatabaseBackupUtilitySheet = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        }
+                    }
+                    RoomDatabaseBackupRestoreView(
+                        activeBusiness = activeBusiness,
+                        onDataRestored = {
+                            // Data restored
+                        }
+                    )
+                }
+            }
+        }
     }
 }

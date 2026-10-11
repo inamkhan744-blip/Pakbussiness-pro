@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Cake
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Checkroom
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Devices
@@ -1444,12 +1445,34 @@ fun DashboardTab(
                                 }
 
                                 Column {
+                                    val bizTypeLower = business?.type?.lowercase() ?: ""
+                                    val (moduleTitle, moduleDesc, badgeText) = when {
+                                        bizTypeLower.contains("dairy") || bizTypeLower.contains("milk") || bizTypeLower.contains("doodh") ->
+                                            Triple("Dairy & Milk Shop (دودھ دہی)", "Daily gawala supply, fat % testing, milk liters POS billing & chiller inventory", "DAIRY POS")
+                                        bizTypeLower.contains("meat") || bizTypeLower.contains("murghi") || bizTypeLower.contains("gosht") ->
+                                            Triple("Meat & Poultry (مرغی گوشت)", "Live chicken weight rate, fresh meat cutting POS & supplier accounts", "MEAT POS")
+                                        bizTypeLower.contains("fruit") || bizTypeLower.contains("sabzi") || bizTypeLower.contains("mandi") ->
+                                            Triple("Fruit & Vegetable (سبزی منڈی)", "Daily mandi crates rate, KG/Dharri fast scale billing & wastage tracking", "MANDI POS")
+                                        bizTypeLower.contains("hardware") || bizTypeLower.contains("sanitary") || bizTypeLower.contains("paint") ->
+                                            Triple("Hardware & Sanitary Store", "Sanitary fittings, paint buckets, pipe lengths & builder ledger bills", "HARDWARE")
+                                        bizTypeLower.contains("sarafa") || bizTypeLower.contains("jewelry") || bizTypeLower.contains("gold") ->
+                                            Triple("Sarafa & Gold Jewelry (صرافہ)", "Tola/Masha/Ratti purity calculator, gold craft making charges & purchase bills", "SARAFA")
+                                        bizTypeLower.contains("construction") || bizTypeLower.contains("cement") || bizTypeLower.contains("saria") ->
+                                            Triple("Construction Materials (سیمنٹ سریا)", "Soot bar conversion, cement bags delivery chalan & site credit accounts", "BUILDER")
+                                        bizTypeLower.contains("book") || bizTypeLower.contains("stationery") ->
+                                            Triple("Book Depot & Stationery", "Curriculum books, stationery item packs, school bundle billing & photocopy", "BOOK DEPOT")
+                                        bizTypeLower.contains("agriculture") || bizTypeLower.contains("fertilizer") || bizTypeLower.contains("beej") ->
+                                            Triple("Agri Seeds & Fertilizer (کھاد بیج)", "Fertilizer sacks, seed batches, crop spray pesticides & kisan khata", "AGRI STORE")
+                                        else ->
+                                            Triple("Retail & POS Store Hub", "High-speed POS checkout, inventory catalog with SKU barcodes & customer Udhaar/Khata records", "ACTIVE")
+                                    }
+
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         Text(
-                                            text = "Retail & POS Store Hub",
+                                            text = moduleTitle,
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 15.sp,
                                             color = MaterialTheme.colorScheme.onSurface
@@ -1459,7 +1482,7 @@ fun DashboardTab(
                                             color = PakEmeraldPrimary
                                         ) {
                                             Text(
-                                                text = "ACTIVE",
+                                                text = badgeText,
                                                 fontSize = 9.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.White,
@@ -1468,7 +1491,7 @@ fun DashboardTab(
                                         }
                                     }
                                     Text(
-                                        text = "High-speed POS checkout, inventory catalog with SKU barcodes & customer Udhaar/Khata records",
+                                        text = moduleDesc,
                                         fontSize = 11.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         lineHeight = 14.sp
@@ -1485,6 +1508,86 @@ fun DashboardTab(
                                 Text("Open POS", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        // Section: Pakistani Trade Utilities & Quick Calculators (Always visible on all businesses)
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = PakGoldContainer.copy(alpha = 0.55f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, PakGoldSecondary.copy(alpha = 0.4f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateTab(BottomNavTab.SETTINGS) }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(PakGoldSecondary, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Calculate,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "Pakistani Trade Calculators",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = PakGoldSecondary
+                                ) {
+                                    Text(
+                                        text = "10 TOOLS",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "Galla Cash Counter, Mandi Maund, Gold Tola, Fabric Gaz, Milk Fat %, Saria/Cement & Zakat",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 14.sp
+                            )
+                        }
+                    }
+
+                    Button(
+                        onClick = { onNavigateTab(BottomNavTab.SETTINGS) },
+                        colors = ButtonDefaults.buttonColors(containerColor = PakGoldSecondary),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text("Tools", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

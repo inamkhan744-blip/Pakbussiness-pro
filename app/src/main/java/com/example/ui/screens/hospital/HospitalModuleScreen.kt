@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.LocalHospital
@@ -49,6 +50,7 @@ import com.example.data.BusinessEntity
 import com.example.data.DoctorEntity
 import com.example.data.PatientEntity
 import com.example.data.PrescriptionEntity
+import com.example.ui.components.DailySalesClinicAppointmentsVisualization
 import com.example.ui.theme.PakEmeraldContainer
 import com.example.ui.theme.PakEmeraldPrimary
 
@@ -56,7 +58,8 @@ enum class HospitalSubTab(val title: String, val icon: ImageVector) {
     PATIENTS("Patients", Icons.Default.People),
     DOCTORS("Doctors", Icons.Default.MedicalServices),
     APPOINTMENTS("Appointments", Icons.Default.CalendarMonth),
-    PRESCRIPTIONS("Prescriptions", Icons.Default.Description)
+    PRESCRIPTIONS("Prescriptions", Icons.Default.Description),
+    DAILY_SUMMARY("Daily Summary (PKR)", Icons.Default.Assessment)
 }
 
 @Composable
@@ -168,6 +171,7 @@ fun HospitalModuleScreen(
                             HospitalSubTab.DOCTORS -> doctors.size
                             HospitalSubTab.APPOINTMENTS -> appointments.count { it.status == "SCHEDULED" }
                             HospitalSubTab.PRESCRIPTIONS -> prescriptions.size
+                            HospitalSubTab.DAILY_SUMMARY -> 0
                         }
 
                         Tab(
@@ -279,6 +283,15 @@ fun HospitalModuleScreen(
                         preselectedAppointment = rxTargetAppointment,
                         onSavePrescription = onSavePrescription,
                         onDeletePrescription = onDeletePrescription
+                    )
+                }
+
+                HospitalSubTab.DAILY_SUMMARY -> {
+                    DailySalesClinicAppointmentsVisualization(
+                        appointments = appointments,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
                     )
                 }
             }

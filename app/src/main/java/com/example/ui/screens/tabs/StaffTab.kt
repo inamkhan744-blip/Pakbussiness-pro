@@ -28,12 +28,15 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.HowToReg
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -456,13 +459,52 @@ fun StaffTab(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = staff.name,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 16.sp
+                                        )
+                                        if (staff.staffCode.isNotBlank()) {
+                                            Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = PakGoldContainer
+                                            ) {
+                                                Text(
+                                                    text = "ID: ${staff.staffCode}",
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = PakEmeraldDark,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = when (staff.accessLevel) {
+                                                "MANAGER" -> Color(0xFFE0F2FE)
+                                                "CASHIER" -> Color(0xFFFEF3C7)
+                                                else -> MaterialTheme.colorScheme.surfaceVariant
+                                            }
+                                        ) {
+                                            Text(
+                                                text = staff.accessLevel.ifBlank { "STAFF" },
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = when (staff.accessLevel) {
+                                                    "MANAGER" -> Color(0xFF0284C7)
+                                                    "CASHIER" -> Color(0xFFB45309)
+                                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                                },
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
                                     Text(
-                                        text = staff.name,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp
-                                    )
-                                    Text(
-                                        text = "${staff.role} • 📞 ${staff.phone}",
+                                        text = "${staff.role} • 📞 ${staff.phone} • Login PIN: ${staff.loginPin.ifBlank { "1234" }}",
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -601,7 +643,7 @@ fun StaffTab(
         AddStaffDialog(
             currency = currency,
             onDismiss = { showAddStaffDialog = false },
-            onSave = { name, role, phone, salary ->
+            onSave = { name, role, phone, salary, staffCode, loginPin, accessLevel ->
                 viewModel.saveStaffMember(
                     StaffEntity(
                         businessId = business?.id ?: 0L,
@@ -609,7 +651,10 @@ fun StaffTab(
                         role = role,
                         phone = phone,
                         monthlySalary = salary,
-                        joiningDate = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date())
+                        joiningDate = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date()),
+                        staffCode = staffCode,
+                        loginPin = loginPin,
+                        accessLevel = accessLevel
                     )
                 )
                 showAddStaffDialog = false
@@ -691,18 +736,22 @@ private fun StatusButton(
 private fun AddStaffDialog(
     currency: String,
     onDismiss: () -> Unit,
-    onSave: (name: String, role: String, phone: String, salary: Double) -> Unit
+    onSave: (name: String, role: String, phone: String, salary: Double, staffCode: String, loginPin: String, accessLevel: String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var role by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var salaryText by remember { mutableStateOf("") }
+    var staffCode by remember { mutableStateOf("STF-${(100..999).random()}") }
+    var loginPin by remember { mutableStateOf("1234") }
+    var accessLevel by remember { mutableStateOf("STAFF") } // MANAGER, CASHIER, STAFF
 
     val presetRoles = listOf("Salesman", "Cashier", "Manager", "Helper", "Chef", "Tailor Master", "Mechanic", "Trainer", "Accountant")
+    val accessLevels = listOf("STAFF" to "Staff Member", "CASHIER" to "POS Cashier", "MANAGER" to "Manager")
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Staff Member", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+        title = { Text("Add Staff Member & Login ID", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -730,7 +779,11 @@ private fun AddStaffDialog(
                         Surface(
                             shape = RoundedCornerShape(6.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant,
-                            modifier = Modifier.clickable { role = preset }
+                            modifier = Modifier.clickable {
+                                role = preset
+                                if (preset.equals("Manager", true)) accessLevel = "MANAGER"
+                                else if (preset.equals("Cashier", true)) accessLevel = "CASHIER"
+                            }
                         ) {
                             Text(preset, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                         }
@@ -754,6 +807,72 @@ private fun AddStaffDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
+
+                // Login Credentials for Staff
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = PakGoldContainer.copy(alpha = 0.35f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "Staff Login Credentials (عملہ لاگ ان آئی ڈی و پن)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PakEmeraldDark
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = staffCode,
+                                onValueChange = { staffCode = it },
+                                label = { Text("Staff ID") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            OutlinedTextField(
+                                value = loginPin,
+                                onValueChange = { loginPin = it.filter { ch -> ch.isDigit() }.take(6) },
+                                label = { Text("Login PIN") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                                singleLine = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        // Access Level
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            accessLevels.forEach { (level, label) ->
+                                val isSelected = accessLevel == level
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = if (isSelected) PakEmeraldPrimary else MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable { accessLevel = level }
+                                ) {
+                                    Text(
+                                        text = label,
+                                        fontSize = 10.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        modifier = Modifier.padding(vertical = 4.dp, horizontal = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -761,13 +880,13 @@ private fun AddStaffDialog(
                 onClick = {
                     val sal = salaryText.toDoubleOrNull() ?: 0.0
                     if (name.isNotBlank() && role.isNotBlank()) {
-                        onSave(name, role, phone, sal)
+                        onSave(name, role, phone, sal, staffCode.ifBlank { "STF-${(100..999).random()}" }, loginPin.ifBlank { "1234" }, accessLevel)
                     }
                 },
                 enabled = name.isNotBlank() && role.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary)
             ) {
-                Text("Add Member")
+                Text("Add Member & Login ID")
             }
         },
         dismissButton = {

@@ -54,6 +54,7 @@ import androidx.compose.ui.window.Dialog
 import com.example.data.PatientEntity
 import com.example.data.PrescriptionEntity
 import com.example.ui.ClinicViewModel
+import com.example.ui.components.DailySalesClinicAppointmentsVisualization
 import com.example.util.PdfExportUtil
 import com.example.util.PrescribedMedicineItem
 import com.example.util.PrescriptionExportData
@@ -76,7 +77,7 @@ fun ClinicScreen(
     var showAddPatientDialog by remember { mutableStateOf(false) }
     var targetPatientForRx by remember { mutableStateOf<PatientEntity?>(null) }
 
-    val tabs = listOf("Patients & OPD", "Prescriptions (Rx)")
+    val tabs = listOf("Patients & OPD", "Prescriptions (Rx)", "Daily Summary & Sales (PKR)")
 
     Scaffold(
         modifier = modifier.fillMaxSize().testTag("clinic_screen"),
@@ -216,6 +217,12 @@ fun ClinicScreen(
                             }
                         }
                     }
+                }
+                2 -> {
+                    // Daily Summary of Sales and Clinic Appointments in PKR
+                    DailySalesClinicAppointmentsVisualization(
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
         }

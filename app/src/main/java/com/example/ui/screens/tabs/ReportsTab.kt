@@ -66,6 +66,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.BusinessEntity
 import com.example.ui.BusinessViewModel
+import com.example.ui.components.DailySalesClinicAppointmentsVisualization
+import com.example.ui.components.RoomDatabaseBackupRestoreView
 import com.example.ui.theme.PakEmeraldContainer
 import com.example.ui.theme.PakEmeraldDark
 import com.example.ui.theme.PakEmeraldPrimary
@@ -90,8 +92,10 @@ fun ReportsTab(
     val expenses by viewModel.expenses.collectAsState()
     val gymMembers by viewModel.gymMembers.collectAsState()
     val pharmacySales by viewModel.pharmacySales.collectAsState()
+    val orders by viewModel.orders.collectAsState()
+    val hospitalAppointments by viewModel.hospitalAppointments.collectAsState()
 
-    var selectedTab by remember { mutableStateOf(0) } // 0: Day-End Z-Report, 1: Profit & Loss, 2: Backup & Restore
+    var selectedTab by remember { mutableStateOf(0) } // 0: Day-End Z-Report, 1: Profit & Loss, 2: Daily Viz (PKR), 3: Backup & Restore
     var openingCashText by remember { mutableStateOf("5000") }
     var showRestoreDialog by remember { mutableStateOf(false) }
     var restoreJsonText by remember { mutableStateOf("") }
@@ -194,17 +198,22 @@ fun ReportsTab(
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    text = { Text("Day End (Z-Report)", fontWeight = FontWeight.SemiBold, fontSize = 12.sp) }
+                    text = { Text("Day End (Z)", fontWeight = FontWeight.SemiBold, fontSize = 11.sp) }
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    text = { Text("P&L Summary", fontWeight = FontWeight.SemiBold, fontSize = 12.sp) }
+                    text = { Text("P&L Summary", fontWeight = FontWeight.SemiBold, fontSize = 11.sp) }
                 )
                 Tab(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
-                    text = { Text("Backup & Restore", fontWeight = FontWeight.SemiBold, fontSize = 12.sp) }
+                    text = { Text("Daily Viz (PKR)", fontWeight = FontWeight.SemiBold, fontSize = 11.sp) }
+                )
+                Tab(
+                    selected = selectedTab == 3,
+                    onClick = { selectedTab = 3 },
+                    text = { Text("Backup & Sync", fontWeight = FontWeight.SemiBold, fontSize = 11.sp) }
                 )
             }
         }
@@ -489,79 +498,24 @@ fun ReportsTab(
                     }
                 }
             }
+        } else if (selectedTab == 2) {
+            // DAILY SALES & CLINIC APPOINTMENTS VISUALIZATION (PKR)
+            item {
+                DailySalesClinicAppointmentsVisualization(
+                    orders = orders,
+                    appointments = hospitalAppointments,
+                    currencySymbol = currency
+                )
+            }
         } else {
             // BACKUP & RESTORE TAB
             item {
-                Card(
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text("100% Offline Data Backup & Restore", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text(
-                            "Your business records are stored securely on this phone. Create a complete backup file to save to WhatsApp, Google Drive, or transfer to another phone.",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        HorizontalDivider()
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Button(
-                                onClick = {
-                                    val backupJson = generateBackupJson(business, expenses)
-                                    val sendIntent = Intent().apply {
-                                        action = Intent.ACTION_SEND
-                                        putExtra(Intent.EXTRA_TEXT, backupJson)
-                                        type = "text/plain"
-                                    }
-                                    context.startActivity(Intent.createChooser(sendIntent, "Share Complete Business Backup"))
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Export Backup", fontSize = 13.sp)
-                            }
-
-                            OutlinedButton(
-                                onClick = {
-                                    val backupJson = generateBackupJson(business, expenses)
-                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                    clipboard.setPrimaryClip(ClipData.newPlainText("PakBusiness Backup", backupJson))
-                                    Toast.makeText(context, "Backup copied to clipboard!", Toast.LENGTH_SHORT).show()
-                                },
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Copy Backup", fontSize = 13.sp)
-                            }
-                        }
-
-                        Button(
-                            onClick = { showRestoreDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Restore from JSON Backup", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
-                        }
+                RoomDatabaseBackupRestoreView(
+                    activeBusiness = business,
+                    onDataRestored = {
+                        // Data restored callback
                     }
-                }
+                )
             }
         }
     }

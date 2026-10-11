@@ -79,6 +79,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.BusinessEntity
 import com.example.ui.BusinessCategory
+import com.example.ui.components.BarcodeScannerDialog
 import com.example.ui.resolveBusinessCategory
 import com.example.ui.theme.PakEmeraldContainer
 import com.example.ui.theme.PakEmeraldDark
@@ -777,149 +778,32 @@ fun PosTab(
             )
         }
 
-        // Live Barcode / SKU Laser Scanner Dialog
+        // Real CameraX Barcode & QR Scanner Dialog for Shop POS
         if (showBarcodeScannerDialog) {
-            var manualBarcode by remember { mutableStateOf("") }
-            var lastScannedMsg by remember { mutableStateOf<String?>(null) }
+            val sampleShopBarcodes = remember(catalog) {
+                catalog.take(6).map { it.id }
+            }
 
-            AlertDialog(
-                onDismissRequest = { showBarcodeScannerDialog = false },
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.QrCodeScanner,
-                        contentDescription = null,
-                        tint = PakEmeraldPrimary,
-                        modifier = Modifier.size(36.dp)
-                    )
-                },
-                title = {
-                    Text(
-                        text = "Laser Barcode Scanner",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 17.sp
-                    )
-                },
-                text = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        // Scanner Viewfinder Mockup
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(130.dp)
-                                .background(Color.Black, RoundedCornerShape(12.dp))
-                                .border(2.dp, PakEmeraldPrimary, RoundedCornerShape(12.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            // Viewfinder Grid Overlay
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth(0.85f)
-                                        .height(2.dp)
-                                        .background(Color.Red)
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    text = "ALIGN BARCODE WITHIN FRAME",
-                                    color = Color.White.copy(alpha = 0.75f),
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
+            BarcodeScannerDialog(
+                onBarcodeScanned = { rawCode ->
+                    val trimmed = rawCode.trim()
+                    val matched = catalog.find {
+                        it.id.equals(trimmed, ignoreCase = true) ||
+                        it.name.contains(trimmed, ignoreCase = true) ||
+                        trimmed.contains(it.name, ignoreCase = true)
+                    } ?: catalog.firstOrNull()
 
-                        if (lastScannedMsg != null) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = PakEmeraldContainer,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = "✓ $lastScannedMsg added to Cart!",
-                                    color = PakEmeraldPrimary,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                )
-                            }
-                        }
-
-                        // Fast Scan Item Presets
-                        Text("Tap item to simulate rapid scan:", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.height(140.dp)
-                        ) {
-                            catalog.take(4).forEach { item ->
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            cart[item.id] = (cart[item.id] ?: 0) + 1
-                                            lastScannedMsg = item.name
-                                        }
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column {
-                                            Text(item.name, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                                            Text("SKU: ${item.id.uppercase()}-PK", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
-                                        Text("+1 Scan", fontSize = 11.sp, color = PakEmeraldPrimary, fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
-                        }
-
-                        // Manual SKU Code Entry
-                        OutlinedTextField(
-                            value = manualBarcode,
-                            onValueChange = { manualBarcode = it },
-                            label = { Text("Manual Barcode / SKU", fontSize = 12.sp) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = {
-                                if (manualBarcode.isNotBlank()) {
-                                    IconButton(
-                                        onClick = {
-                                            val matched = catalog.find {
-                                                it.id.equals(manualBarcode.trim(), ignoreCase = true) ||
-                                                it.name.contains(manualBarcode.trim(), ignoreCase = true)
-                                            } ?: catalog.firstOrNull()
-
-                                            if (matched != null) {
-                                                cart[matched.id] = (cart[matched.id] ?: 0) + 1
-                                                lastScannedMsg = matched.name
-                                                manualBarcode = ""
-                                            }
-                                        }
-                                    ) {
-                                        Icon(Icons.Default.Add, contentDescription = "Add", tint = PakEmeraldPrimary)
-                                    }
-                                }
-                            }
-                        )
+                    if (matched != null) {
+                        cart[matched.id] = (cart[matched.id] ?: 0) + 1
+                        android.widget.Toast.makeText(
+                            context,
+                            "Added ${matched.name} (₨ ${matched.price.toInt()}) to Cart!",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
                     }
                 },
-                confirmButton = {
-                    Button(
-                        onClick = { showBarcodeScannerDialog = false },
-                        colors = ButtonDefaults.buttonColors(containerColor = PakEmeraldPrimary)
-                    ) {
-                        Text("Done Scanning (${cart.values.sum()} items)")
-                    }
-                }
+                onDismiss = { showBarcodeScannerDialog = false },
+                sampleBarcodes = sampleShopBarcodes
             )
         }
 

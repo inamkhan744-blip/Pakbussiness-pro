@@ -4,7 +4,20 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.OptIn
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.common.InputImage
+import java.util.concurrent.Executors
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -129,7 +142,7 @@ fun BarcodeScannerDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     if (hasCameraPermission) {
-                        // Camera viewfinder simulation & scanner reticle
+                        // Real CameraX viewfinder stream & scanner reticle
                         Box(
                             modifier = Modifier
                                 .size(280.dp)
@@ -138,6 +151,19 @@ fun BarcodeScannerDialog(
                                 .border(2.dp, Color(0xFF4CAF50), RoundedCornerShape(16.dp))
                                 .testTag("camera_viewfinder")
                         ) {
+                            CameraXLivePreviewView(
+                                isTorchOn = isTorchOn,
+                                onBarcodeDetected = { code ->
+                                    val sanitized = BarcodeScannerUtil.sanitizeBarcode(code)
+                                    if (sanitized.isNotBlank()) {
+                                        BarcodeScannerUtil.triggerSuccessHaptic(context)
+                                        lastScannedCode = sanitized
+                                        onBarcodeScanned(sanitized)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
+
                             AnimatedScanLaser()
 
                             // Corner Target Markers
@@ -392,3 +418,93 @@ private fun TargetCornerReticles() {
         drawLine(c, Offset(size.width, size.height), Offset(size.width, size.height - cornerLength), strokeW)
     }
 }
+
+/**
+ * CameraX Live Preview with Google ML Kit Barcode Analyzer.
+ * Streams device camera preview and rapidly parses 1D & 2D barcodes in real time.
+ */
+@OptIn(ExperimentalGetImage::class)
+@Composable
+fun CameraXLivePreviewView(
+    isTorchOn: Boolean,
+    onBarcodeDetected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var camera by remember { mutableStateOf<Camera?>(null) }
+    var lastDetectedCode by remember { mutableStateOf("") }
+    var lastDetectedTime by remember { mutableStateOf(0L) }
+
+    LaunchedEffect(isTorchOn, camera) {
+        try {
+            camera?.cameraControl?.enableTorch(isTorchOn)
+        } catch (_: Exception) {}
+    }
+
+    AndroidView(
+        factory = { ctx ->
+            val previewView = PreviewView(ctx).apply {
+                scaleType = PreviewView.ScaleType.FILL_CENTER
+            }
+            val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+            val cameraExecutor = Executors.newSingleThreadExecutor()
+
+            cameraProviderFuture.addListener({
+                try {
+                    val cameraProvider = cameraProviderFuture.get()
+                    val preview = Preview.Builder().build().also {
+                        it.setSurfaceProvider(previewView.surfaceProvider)
+                    }
+
+                    val barcodeScanner = BarcodeScanning.getClient()
+
+                    val imageAnalysis = ImageAnalysis.Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
+
+                    imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                        val mediaImage = imageProxy.image
+                        if (mediaImage != null) {
+                            val inputImage = InputImage.fromMediaImage(
+                                mediaImage,
+                                imageProxy.imageInfo.rotationDegrees
+                            )
+                            barcodeScanner.process(inputImage)
+                                .addOnSuccessListener { barcodes ->
+                                    for (barcode in barcodes) {
+                                        barcode.rawValue?.let { raw ->
+                                            val now = System.currentTimeMillis()
+                                            if (raw.isNotBlank() && (raw != lastDetectedCode || now - lastDetectedTime > 1800L)) {
+                                                lastDetectedCode = raw
+                                                lastDetectedTime = now
+                                                onBarcodeDetected(raw)
+                                            }
+                                        }
+                                    }
+                                }
+                                .addOnCompleteListener {
+                                    imageProxy.close()
+                                }
+                        } else {
+                            imageProxy.close()
+                        }
+                    }
+
+                    cameraProvider.unbindAll()
+                    camera = cameraProvider.bindToLifecycle(
+                        lifecycleOwner,
+                        CameraSelector.DEFAULT_BACK_CAMERA,
+                        preview,
+                        imageAnalysis
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }, ContextCompat.getMainExecutor(ctx))
+
+            previewView
+        },
+        modifier = modifier
+    )
+}
+

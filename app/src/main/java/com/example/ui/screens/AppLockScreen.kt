@@ -74,6 +74,7 @@ import com.example.ui.theme.PakGoldSecondary
 fun AppLockScreen(
     savedUsername: String,
     onUnlock: (password: String) -> Boolean,
+    onUnlockWithCredentials: ((usernameOrStaffCode: String, pinOrPass: String) -> Pair<Boolean, String>)? = null,
     onBypassSecurity: () -> Unit = {},
     appLanguage: AppLanguage = AppLanguage.ENGLISH,
     businessName: String = "PakBusiness Pro"
@@ -82,9 +83,29 @@ fun AppLockScreen(
     var inputPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
+    var successGreeting by remember { mutableStateOf("") }
     var showForgotHint by remember { mutableStateOf(false) }
+    var selectedLoginMode by remember { mutableStateOf(0) } // 0: Owner, 1: Staff ID
 
     val focusManager = LocalFocusManager.current
+
+    val handleLoginAction = {
+        focusManager.clearFocus()
+        if (onUnlockWithCredentials != null) {
+            val (ok, msg) = onUnlockWithCredentials(inputUsername.trim(), inputPassword.trim())
+            if (!ok) {
+                errorMessage = msg
+            } else {
+                errorMessage = ""
+                successGreeting = msg
+            }
+        } else {
+            val success = onUnlock(inputPassword.trim())
+            if (!success) {
+                errorMessage = "Ghalat Password! Please try again."
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -171,16 +192,78 @@ fun AppLockScreen(
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
-                    // Username Field
+                    // Role Login Selector: Owner vs Staff ID
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (selectedLoginMode == 0) PakEmeraldPrimary else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (selectedLoginMode == 0) Color.White else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable {
+                                    selectedLoginMode = 0
+                                    inputUsername = savedUsername.ifBlank { "admin" }
+                                    inputPassword = ""
+                                    errorMessage = ""
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Business, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Owner Login (مالک)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (selectedLoginMode == 1) PakGoldSecondary else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (selectedLoginMode == 1) Color.Black else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable {
+                                    selectedLoginMode = 1
+                                    inputUsername = ""
+                                    inputPassword = ""
+                                    errorMessage = ""
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Staff ID (عملہ)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    // Username / Staff ID Field
                     OutlinedTextField(
                         value = inputUsername,
                         onValueChange = { inputUsername = it },
-                        label = { Text("Username / صارف نام") },
+                        label = {
+                            Text(
+                                if (selectedLoginMode == 0) "Owner Username / صارف نام"
+                                else "Staff ID / Phone / Name (عملہ آئی ڈی یا فون)"
+                            )
+                        },
+                        placeholder = {
+                            if (selectedLoginMode == 1) Text("e.g. STF-101 ya 03001234567")
+                        },
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Person,
                                 contentDescription = null,
-                                tint = PakEmeraldPrimary
+                                tint = if (selectedLoginMode == 0) PakEmeraldPrimary else PakGoldSecondary
                             )
                         },
                         singleLine = true,
@@ -190,19 +273,27 @@ fun AppLockScreen(
                             .testTag("lock_screen_username")
                     )
 
-                    // Password Field
+                    // Password / Staff PIN Field
                     OutlinedTextField(
                         value = inputPassword,
                         onValueChange = {
                             inputPassword = it
                             errorMessage = ""
                         },
-                        label = { Text("PIN / Password") },
+                        label = {
+                            Text(
+                                if (selectedLoginMode == 0) "Master Password / PIN (پاس ورڈ)"
+                                else "Staff 4-Digit PIN (عملہ پن کوڈ)"
+                            )
+                        },
+                        placeholder = {
+                            if (selectedLoginMode == 1) Text("Default: 1234")
+                        },
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Key,
                                 contentDescription = null,
-                                tint = PakEmeraldPrimary
+                                tint = if (selectedLoginMode == 0) PakEmeraldPrimary else PakGoldSecondary
                             )
                         },
                         trailingIcon = {
@@ -216,17 +307,11 @@ fun AppLockScreen(
                         singleLine = true,
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
+                            keyboardType = if (selectedLoginMode == 1) KeyboardType.NumberPassword else KeyboardType.Password,
                             imeAction = ImeAction.Done
                         ),
                         keyboardActions = KeyboardActions(
-                            onDone = {
-                                focusManager.clearFocus()
-                                val success = onUnlock(inputPassword.trim())
-                                if (!success) {
-                                    errorMessage = "Ghalat Password! Please try again."
-                                }
-                            }
+                            onDone = { handleLoginAction() }
                         ),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
@@ -249,15 +334,10 @@ fun AppLockScreen(
 
                     // Unlock Button
                     Button(
-                        onClick = {
-                            focusManager.clearFocus()
-                            val success = onUnlock(inputPassword.trim())
-                            if (!success) {
-                                errorMessage = "Ghalat Password! Please try again."
-                            }
-                        },
+                        onClick = { handleLoginAction() },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = PakEmeraldPrimary
+                            containerColor = if (selectedLoginMode == 0) PakEmeraldPrimary else PakGoldSecondary,
+                            contentColor = if (selectedLoginMode == 0) Color.White else Color.Black
                         ),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
@@ -272,10 +352,18 @@ fun AppLockScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = when (appLanguage) {
-                                AppLanguage.URDU -> "لاگ ان / کھولیں"
-                                AppLanguage.HINDI -> "लॉगिन / खोलें"
-                                AppLanguage.ENGLISH -> "Unlock App"
+                            text = if (selectedLoginMode == 0) {
+                                when (appLanguage) {
+                                    AppLanguage.URDU -> "مالک لاگ ان کریں"
+                                    AppLanguage.HINDI -> "मालिक लॉगिन करें"
+                                    AppLanguage.ENGLISH -> "Login as Owner"
+                                }
+                            } else {
+                                when (appLanguage) {
+                                    AppLanguage.URDU -> "عملہ لاگ ان کریں (Staff Login)"
+                                    AppLanguage.HINDI -> "स्टाफ लॉगिन करें"
+                                    AppLanguage.ENGLISH -> "Staff Member Login"
+                                }
                             },
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp

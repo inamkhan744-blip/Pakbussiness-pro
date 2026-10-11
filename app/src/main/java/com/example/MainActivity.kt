@@ -68,6 +68,9 @@ class MainActivity : ComponentActivity() {
                     AppLockScreen(
                         savedUsername = securityUsername,
                         onUnlock = { password -> viewModel.unlockApp(password) },
+                        onUnlockWithCredentials = { userOrCode, passOrPin ->
+                            viewModel.unlockAppWithCredentials(userOrCode, passOrPin)
+                        },
                         onBypassSecurity = { viewModel.bypassSecurity() },
                         appLanguage = appLanguage,
                         businessName = activeBusiness?.name ?: "PakBusiness Pro"

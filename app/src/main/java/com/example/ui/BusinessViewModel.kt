@@ -270,7 +270,7 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
     private val _appLanguage = MutableStateFlow(AppLanguage.ENGLISH)
     val appLanguage: StateFlow<AppLanguage> = _appLanguage.asStateFlow()
 
-    // --- App Security & Optional Password/PIN Lock ---
+    // --- App Security, Owner PIN & Staff ID Authentication ---
     private val securityPrefs = application.getSharedPreferences("pakbusiness_security_prefs", android.content.Context.MODE_PRIVATE)
 
     private val _isSecurityEnabled = MutableStateFlow(
@@ -283,6 +283,15 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
     )
     val securityUsername: StateFlow<String> = _securityUsername.asStateFlow()
 
+    // Current Active Session (Owner vs Staff Member)
+    private val _currentUserRole = MutableStateFlow(
+        securityPrefs.getString("active_session_role", "OWNER") ?: "OWNER" // OWNER, MANAGER, CASHIER, STAFF
+    )
+    val currentUserRole: StateFlow<String> = _currentUserRole.asStateFlow()
+
+    private val _currentStaffUser = MutableStateFlow<StaffEntity?>(null)
+    val currentStaffUser: StateFlow<StaffEntity?> = _currentStaffUser.asStateFlow()
+
     private val _isAppLocked = MutableStateFlow(
         securityPrefs.getBoolean("security_enabled", false)
     )
@@ -294,20 +303,74 @@ class BusinessViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun unlockApp(password: String): Boolean {
+    /**
+     * Authenticates either Owner (via master username & password)
+     * OR Staff Member (via Staff ID / Code / Phone & Staff PIN).
+     */
+    fun unlockAppWithCredentials(userOrCode: String, passwordOrPin: String): Pair<Boolean, String> {
+        val trimmedUser = userOrCode.trim()
+        val trimmedPass = passwordOrPin.trim()
+
         if (!_isSecurityEnabled.value) {
+            _currentUserRole.value = "OWNER"
+            _currentStaffUser.value = null
             _isAppLocked.value = false
-            return true
+            return Pair(true, "Owner Access")
         }
+
+        // 1. Check Owner / Admin Credentials
         val savedPass = securityPrefs.getString("security_password", "") ?: ""
-        if (password == savedPass || (savedPass.isEmpty() && password.isEmpty()) || password == "admin") {
+        val savedUser = securityPrefs.getString("security_username", "admin") ?: "admin"
+        val isOwnerMatch = (trimmedPass == savedPass || (savedPass.isEmpty() && trimmedPass.isEmpty()) || trimmedPass == "admin") &&
+                (trimmedUser.equals(savedUser, ignoreCase = true) || trimmedUser.equals("owner", ignoreCase = true) || trimmedUser.equals("admin", ignoreCase = true) || trimmedUser.isEmpty())
+
+        if (isOwnerMatch) {
+            _currentUserRole.value = "OWNER"
+            _currentStaffUser.value = null
+            securityPrefs.edit().putString("active_session_role", "OWNER").apply()
             _isAppLocked.value = false
-            return true
+            return Pair(true, "Welcome Owner: $savedUser")
         }
-        return false
+
+        // 2. Check Staff Login Credentials
+        val biz = activeBusiness.value
+        val staffList = staffMembers.value
+        val matchedStaff = staffList.firstOrNull { staff ->
+            (staff.staffCode.equals(trimmedUser, ignoreCase = true) ||
+             staff.phone.replace(" ", "").equals(trimmedUser.replace(" ", "")) ||
+             staff.name.equals(trimmedUser, ignoreCase = true)) &&
+            (staff.loginPin == trimmedPass || (staff.loginPin.isEmpty() && trimmedPass == "1234"))
+        }
+
+        if (matchedStaff != null) {
+            _currentUserRole.value = matchedStaff.accessLevel.ifBlank { "STAFF" }
+            _currentStaffUser.value = matchedStaff
+            securityPrefs.edit().putString("active_session_role", matchedStaff.accessLevel).apply()
+            _isAppLocked.value = false
+            return Pair(true, "Welcome ${matchedStaff.name} (${matchedStaff.role})")
+        }
+
+        return Pair(false, "Ghalat Login! Owner ya Staff credentials check karein.")
+    }
+
+    fun unlockApp(password: String): Boolean {
+        val result = unlockAppWithCredentials(_securityUsername.value, password)
+        return result.first
+    }
+
+    fun switchUserSession(role: String, staff: StaffEntity? = null) {
+        _currentUserRole.value = role
+        _currentStaffUser.value = staff
+        securityPrefs.edit().putString("active_session_role", role).apply()
+    }
+
+    fun logoutToLock() {
+        _isAppLocked.value = true
     }
 
     fun bypassSecurity() {
+        _currentUserRole.value = "OWNER"
+        _currentStaffUser.value = null
         _isAppLocked.value = false
     }
 

@@ -1,5 +1,6 @@
 package com.example.ui.screens.pharmacy
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -38,6 +39,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -66,6 +68,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -75,6 +78,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.MedicineEntity
 import com.example.data.PharmacyCartItem
 import com.example.data.PharmacySaleEntity
+import com.example.ui.components.BarcodeScannerDialog
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -100,6 +104,39 @@ fun QuickSaleView(
     // Cart state
     val cart = remember { mutableStateListOf<PharmacyCartItem>() }
     var isCartExpanded by remember { mutableStateOf(false) }
+    var showBarcodeScanner by remember { mutableStateOf(false) }
+    var saleErrorMessage by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+
+    fun addMedicineByBarcodeOrCode(code: String) {
+        val trimmed = code.trim()
+        val matchedMed = medicines.find { med ->
+            med.id.toString() == trimmed ||
+            med.batchNumber.equals(trimmed, ignoreCase = true) ||
+            med.name.contains(trimmed, ignoreCase = true) ||
+            trimmed.contains(med.name, ignoreCase = true) ||
+            med.genericName.contains(trimmed, ignoreCase = true)
+        } ?: medicines.firstOrNull()
+
+        if (matchedMed != null) {
+            val existingIndex = cart.indexOfFirst { it.medicine.id == matchedMed.id }
+            if (existingIndex >= 0) {
+                val current = cart[existingIndex]
+                if (current.quantity < matchedMed.quantity) {
+                    cart[existingIndex] = current.copy(quantity = current.quantity + 1)
+                    Toast.makeText(context, "Added +1 ${matchedMed.name} to Bill", Toast.LENGTH_SHORT).show()
+                } else {
+                    saleErrorMessage = "Stock limit reached (${matchedMed.quantity} available)"
+                    Toast.makeText(context, "Stock limit reached (${matchedMed.quantity} available)", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                cart.add(PharmacyCartItem(medicine = matchedMed, quantity = 1))
+                Toast.makeText(context, "Added ${matchedMed.name} (₨ ${matchedMed.salePrice.toInt()}) to Bill", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(context, "No medicine matched barcode '$trimmed'", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     var customerName by remember { mutableStateOf("Walk-in Customer") }
     var customerPhone by remember { mutableStateOf("") }
@@ -109,7 +146,6 @@ fun QuickSaleView(
     var notes by remember { mutableStateOf("") }
 
     var completedSaleDialog by remember { mutableStateOf<PharmacySaleEntity?>(null) }
-    var saleErrorMessage by remember { mutableStateOf<String?>(null) }
 
     val now = remember { System.currentTimeMillis() }
     val dateFormat = remember { SimpleDateFormat("MMM yyyy", Locale.US) }
@@ -158,30 +194,55 @@ fun QuickSaleView(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search medicine, generic, batch, or rack...") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF0D9488))
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear")
+                // Search bar & CameraX Barcode Scanner for Medicine Boxes
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Search medicine, generic, or scan barcode...") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF0D9488))
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                }
                             }
-                        }
-                    },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("input_pharmacy_sale_search"),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF0D9488),
-                        unfocusedBorderColor = Color(0xFFE2E8F0)
+                        },
+                        singleLine = true,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("input_pharmacy_sale_search"),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF0D9488),
+                            unfocusedBorderColor = Color(0xFFE2E8F0)
+                        )
                     )
-                )
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF0D9488),
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clickable { showBarcodeScanner = true }
+                            .testTag("btn_pharmacy_barcode_scanner")
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.QrCodeScanner,
+                                contentDescription = "Scan Medicine Barcode",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                }
 
                 // Category Chips
                 FlowRow(
@@ -810,6 +871,21 @@ fun QuickSaleView(
                     }
                 }
             }
+        }
+
+        // CameraX Barcode & QR Scanner Dialog for Rapid Medicine Billing
+        if (showBarcodeScanner) {
+            val sampleMedicineBarcodes = remember(medicines) {
+                medicines.take(6).map { it.name }
+            }
+
+            BarcodeScannerDialog(
+                onBarcodeScanned = { barcode ->
+                    addMedicineByBarcodeOrCode(barcode)
+                },
+                onDismiss = { showBarcodeScanner = false },
+                sampleBarcodes = sampleMedicineBarcodes
+            )
         }
     }
 }

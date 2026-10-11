@@ -227,9 +227,9 @@ object DatabaseBackupUtil {
                 )
             }
 
-            // 2. Safely close active Room instance before swapping files
+            // 2. Safely close active Room instance and reset singleton before swapping files
             try {
-                AppDatabase.getDatabase(context).close()
+                AppDatabase.resetDatabaseInstance()
             } catch (_: Exception) {
             }
 
@@ -250,7 +250,7 @@ object DatabaseBackupUtil {
             // Cleanup staging directory
             tempRestoreDir.deleteRecursively()
 
-            // 5. Re-open database to verify connection integrity
+            // 5. Re-open database to verify connection integrity and reload singleton
             AppDatabase.getDatabase(context).openHelper.readableDatabase
 
             Result.success(
